@@ -323,7 +323,7 @@ Features:
 Backend:
 ```bash
 cd nest-backend
-cp .env.example .env   # if example exists; otherwise edit .env
+cp env.example.txt .env   # if example exists; otherwise edit .env
 pnpm install
 pnpm start
 ```
@@ -331,7 +331,7 @@ pnpm start
 Frontend:
 ```bash
 cd next-ecommerce-orders-queue-challenge
-cp .env.example .env.local
+cp env.example.txt .env.local
 pnpm install
 pnpm dev
 ```
