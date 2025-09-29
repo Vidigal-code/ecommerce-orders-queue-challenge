@@ -6,7 +6,7 @@ Este repositório fornece uma configuração pronta para uso do MongoDB e Redis 
 
 ## Exemplo
 
-<img src="./mongodb/example/mongodb-example.png" alt="" width="800"/> 
+<img src="./mongodb-and-redis/example/mongodb-example.png" alt="" width="800"/> 
 
 ---
 
