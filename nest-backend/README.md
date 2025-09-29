@@ -447,14 +447,3 @@ MIT License - Permission is hereby granted, free of charge, to any person obtain
 
 ---
 
-## Author / Context
-
-Developed as part of the "E-commerce Orders Queue Challenge" for large-scale order generation and prioritized queue processing.
-
-If you want:
-- An English + Portuguese dual README
-- A Docker Compose setup
-- A test load script (k6 / autocannon)
-  …open an issue or request an enhancement.
-
-Enjoy exploring & extending! 🚀
