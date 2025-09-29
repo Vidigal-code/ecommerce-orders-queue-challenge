@@ -276,7 +276,7 @@ export class OrdersProcessor {
             } catch (err) {
                 this.logService.warn('[processOrder] Erro markEnd logs: ' + (err as any)?.message);
             }
-            this.logService.log(`[processOrder] Pedido processado: ${order.id} (${order.priority})`);
+            //this.logService.log(`[processOrder] Pedido processado: ${order.id} (${order.priority})`);
         } catch (err) {
             this.logService.error(`[processOrder] Erro ao atualizar pedido ${order.id}: ${(err as any)?.message}`);
         }
