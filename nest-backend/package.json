@@ -1,5 +1,5 @@
 {
-  "name": "ecommerce-orders-queue-challenge",
+  "name": "nest-ecommerce-orders-queue-challenge",
   "version": "1.0.0",
   "description": "Scalable Node.js, NestJS, and MongoDB solution simulating 1 million e-commerce orders. Processes orders via priority queues (BullMQ), distinguishing VIP and normal requests. API and SSR React/Next.js dashboard provide detailed logs, metrics, reset functionality, and SEO indexable monitoring.",
   "author": "",
