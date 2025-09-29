@@ -2,6 +2,14 @@
 
 This repository provides a ready-to-use Docker setup for MongoDB, designed for the high-volume e-commerce orders simulation challenge.
 
+---
+
+## Example
+
+<img src="./mongodb/example/mongodb-example.png" alt="" width="800"/> 
+
+---
+
 ## Features
 
 - **MongoDB 6.0** running in a Docker container
@@ -62,6 +70,4 @@ To remove data, also delete the `mongo_data` volume:
 docker-compose down -v
 ```
 
----
 
-Feel free to use this setup as the foundation for your challenge or integrate it with your backend API.
