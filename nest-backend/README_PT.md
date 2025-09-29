@@ -433,10 +433,3 @@ MIT License - Sinta-se livre para usar, modificar e distribuir.
 
 ---
 
-## Contato / Autor
-
-Desenvolvido como parte do desafio "E-commerce Orders Queue Challenge".
-
-Se quiser ajuda para preparar um README em inglês ou adicionar diagramas mermaid, é só pedir.
-
-Bom uso! 🚀
