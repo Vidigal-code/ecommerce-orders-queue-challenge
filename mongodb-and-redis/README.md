@@ -6,7 +6,7 @@ This repository provides a ready-to-use Docker setup for MongoDB and Redis, desi
 
 ## Example
 
-<img src="./mongodb-and-redis/example/mongodb-example.png" alt="" width="800"/> 
+<img src="/mongodb-and-redis/example/mongodb-example.png" alt="" width="800"/> 
 
 ---
 
