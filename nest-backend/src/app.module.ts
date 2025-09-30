@@ -1,62 +1,61 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bull';
-import { OrderTypeOrmEntity } from './infrastructure/database/typeorm/order.typeorm.entity';
-import { ProcessRunTypeOrmEntity } from './infrastructure/database/typeorm/process-run.typeorm.entity';
-import { OrdersController } from './presentation/controllers/orders.controller';
-import { OrderTypeOrmRepository } from './infrastructure/database/typeorm/order.typeorm.repository';
-import { ProcessRunTypeOrmRepository } from './infrastructure/database/typeorm/process-run.typeorm.repository';
+
+import { RedisModule } from './infrastructure/queue/modules/redis.module';
+
+import { OrdersGenerationController } from './presentation/controllers/orders-generation.controller';
+import { OrdersStatusController } from './presentation/controllers/orders-status.controller';
+import { OrdersQueueController } from './presentation/controllers/orders-queue.controller';
+
+import { OrderTypeOrmRepository } from './infrastructure/database/typeorm/repositorys/order.typeorm.repository';
+import { ProcessRunTypeOrmRepository } from './infrastructure/database/typeorm/repositorys/process-run.typeorm.repository';
+
 import { GenerateOrdersUseCase } from './application/use-cases/generate-orders.usecase';
 import { LogsUseCase } from './application/use-cases/logs.usecase';
 import { ResetOrdersUseCase } from './application/use-cases/reset-orders.usecase';
-import { OrdersQueueService } from './infrastructure/queue/orders-queue.service';
-import { OrdersProcessor } from './infrastructure/queue/orders.processor';
-import { LogService } from './shared/logs/log.service';
-import { LogViewer } from './shared/logs/log.viewer';
 import { CancelProcessUseCase } from './application/use-cases/cancel-process.usecase';
 
+import { OrdersQueueService } from './infrastructure/queue/services/orders-queue.service';
+import { OrdersGenerationProcessor } from './infrastructure/queue/processors/orders-generation.processor';
+import { OrdersWorkerProcessor } from './infrastructure/queue/processors/orders-worker.processor';
+import { OrdersProcessStateService } from './infrastructure/queue/services/orders-process-state.service';
+
+import { LogService } from './shared/logs/log.service';
+import { LogViewer } from './shared/logs/log.viewer';
+import { DatabaseModule } from './infrastructure/database/modules/database.module';
+
 @Module({
-    imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
-        TypeOrmModule.forRoot({
-            type: 'mongodb',
-            url: process.env.MONGO_URI,
-            database: 'ecommerce',
-            entities: [OrderTypeOrmEntity, ProcessRunTypeOrmEntity],
-            synchronize: true,
-        }),
-        TypeOrmModule.forFeature([OrderTypeOrmEntity, ProcessRunTypeOrmEntity]),
-        BullModule.forRoot({
-            redis: {
-                host: process.env.REDIS_HOST,
-                port: parseInt(process.env.REDIS_PORT || '6379', 10),
-            },
-        }),
-        BullModule.registerQueue({
-            name: 'orders-queue',
-        }),
-    ],
-    controllers: [OrdersController],
-    providers: [
-        LogService,
-        LogViewer,
-        OrderTypeOrmRepository,
-        ProcessRunTypeOrmRepository,
-        {
-            provide: 'IOrderRepository',
-            useClass: OrderTypeOrmRepository,
-        },
-        {
-            provide: 'IProcessRunRepository',
-            useExisting: ProcessRunTypeOrmRepository,
-        },
-        GenerateOrdersUseCase,
-        LogsUseCase,
-        ResetOrdersUseCase,
-        OrdersQueueService,
-        OrdersProcessor,
-        CancelProcessUseCase,
-    ],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    RedisModule,
+  ],
+  controllers: [
+    OrdersGenerationController,
+    OrdersStatusController,
+    OrdersQueueController,
+  ],
+  providers: [
+    LogService,
+    LogViewer,
+    OrderTypeOrmRepository,
+    ProcessRunTypeOrmRepository,
+    {
+      provide: 'IOrderRepository',
+      useClass: OrderTypeOrmRepository,
+    },
+    {
+      provide: 'IProcessRunRepository',
+      useExisting: ProcessRunTypeOrmRepository,
+    },
+    GenerateOrdersUseCase,
+    LogsUseCase,
+    ResetOrdersUseCase,
+    CancelProcessUseCase,
+    OrdersQueueService,
+    OrdersProcessStateService,
+    OrdersGenerationProcessor,
+    OrdersWorkerProcessor,
+  ],
 })
 export class AppModule {}

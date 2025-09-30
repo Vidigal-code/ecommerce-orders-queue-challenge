@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 
 export function QueueStatsCard() {
     const { data, mutate } = useSWR('queueStatus', api.queueStatus, {
-        refreshInterval: 8000
+        refreshInterval: 8000,
     });
     if (!data) {
         return (
@@ -19,14 +19,9 @@ export function QueueStatsCard() {
             <h3 className="font-semibold">Queue Counts</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {Object.entries(data).map(([k, v]) => (
-                    <div
-                        key={k}
-                        className="bg-neutral-800 rounded p-2 flex flex-col"
-                    >
-            <span className="text-[10px] uppercase text-neutral-400">
-              {k}
-            </span>
-                        <span className="font-medium">{v as any}</span>
+                    <div key={k} className="bg-neutral-800 rounded p-2 flex flex-col">
+                        <span className="text-[10px] uppercase text-neutral-400">{k}</span>
+                        <span className="font-medium">{String(v)}</span>
                     </div>
                 ))}
             </div>

@@ -42,7 +42,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-neutral-100`}>
         <script
             type="application/ld+json"
-            // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">

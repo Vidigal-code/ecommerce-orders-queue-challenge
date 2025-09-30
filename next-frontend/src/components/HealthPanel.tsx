@@ -28,12 +28,6 @@ export function HealthPanel() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
                 <Stat label="Status" value={data.status} />
-                <Stat label="Waiting" value={c.waiting} />
-                <Stat label="Active" value={c.active} />
-                <Stat label="Completed" value={c.completed} />
-                <Stat label="Failed" value={c.failed} />
-                <Stat label="Delayed" value={c.delayed} />
-                <Stat label="Paused" value={c.paused ? 'yes' : 'no'} />
                 <Stat label="Processing" value={processor?.isProcessing ? 'yes' : 'no'} />
                 <Stat label="Aborting" value={processor?.aborting ? 'yes' : 'no'} />
                 <Stat label="Has Failed Jobs" value={data.checks?.hasFailedJobs ? 'yes' : 'no'} />

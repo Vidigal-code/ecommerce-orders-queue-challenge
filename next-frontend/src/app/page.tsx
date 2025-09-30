@@ -9,7 +9,7 @@ import { QueueCleanForm } from '@/components/QueueCleanForm';
 import { QueueStatsCard } from '@/components/QueueStatsCard';
 import { JobsTable } from '@/components/JobsTable';
 
-export const revalidate = 15; // ISR
+export const revalidate = 15;
 
 export default async function Page() {
     let status = null;
