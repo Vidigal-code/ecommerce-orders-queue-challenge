@@ -1,435 +1,514 @@
-# E-commerce Orders Queue Challenge (NestJS + Bull + MongoDB + Redis)
+# Desafio: Fila de Pedidos de E-commerce (NestJS + Bull + MongoDB + Redis)
 
-## Sumário
+> Versão em Português – focada em clareza, completude técnica, diagnósticos e extensibilidade.
+
+---
+
+## Índice
+- [Resumo Executivo (TL;DR)](#resumo-executivo-tldr)
 - [Descrição do Desafio](#descrição-do-desafio)
-- [Objetivos Atendidos](#objetivos-atendidos)
-- [Arquitetura Geral](#arquitetura-geral)
-- [Fluxo Completo (Fases)](#fluxo-completo-fases)
+- [Status de Atendimento aos Requisitos](#status-de-atendimento-aos-requisitos)
+- [Arquitetura de Alto Nível](#arquitetura-de-alto-nível)
+- [Fluxo Completo de Fases](#fluxo-completo-de-fases)
 - [Modelo de Dados](#modelo-de-dados)
 - [Estratégia de Geração de Pedidos](#estratégia-de-geração-de-pedidos)
-- [Processamento Prioritário (VIP -> NORMAL)](#processamento-prioritário-vip---normal)
-- [Fila e Concorrência](#fila-e-concorrência)
-- [Logs, Métricas e Persistência de Execuções](#logs-métricas-e-persistência-de-execuções)
-- [Cancelamento Seguro do Processo](#cancelamento-seguro-do-processo)
-- [Endpoints da API](#endpoints-da-api)
+- [Processamento Prioritário (VIP → NORMAL)](#processamento-prioritário-vip--normal)
+- [Fila, Concorrência e Backpressure](#fila-concorrência-e-backpressure)
+- [Métricas, Logs e Histórico de Execuções](#métricas-logs-e-histórico-de-execuções)
+- [Cancelamento Seguro (Abort Cooperativo)](#cancelamento-seguro-abort-cooperativo)
+- [Referência da API](#referência-da-api)
+- [Formato da Resposta de /pedidos](#formato-da-resposta-de-pedidos)
 - [Variáveis de Ambiente](#variáveis-de-ambiente)
-- [Como Executar Localmente](#como-executar-localmente)
+- [Exemplo de .env](#exemplo-de-env)
+- [Execução Local](#execução-local)
+- [Docker (Opcional)](#docker-opcional)
 - [Exemplos de Uso (curl)](#exemplos-de-uso-curl)
-- [Health & Monitoramento](#health--monitoramento)
-- [Escalabilidade e Performance](#escalabilidade-e-performance)
-- [Boas Práticas e Decisões Técnicas](#boas-práticas-e-decisões-técnicas)
-- [Resolução de Problemas (Troubleshooting)](#resolução-de-problemas-troubleshooting)
+- [Health & Monitoring](#health--monitoring)
+- [Escalabilidade e Notas de Performance](#escalabilidade-e-notas-de-performance)
+- [Decisões Técnicas](#decisões-técnicas)
+- [Limitações Conhecidas](#limitações-conhecidas)
+- [Troubleshooting](#troubleshooting)
 - [Possíveis Evoluções Futuras](#possíveis-evoluções-futuras)
 - [Licença](#licença)
+- [Changelog Resumido](#changelog-resumido)
+
+---
+
+## Resumo Executivo (TL;DR)
+
+| Objetivo | Status |
+|----------|--------|
+| Gerar ≥ 1 milhão de pedidos aleatórios | ✅ |
+| Classificar prioridade (DIAMANTE → VIP) | ✅ |
+| Processar totalmente VIP antes de NORMAL | ✅ (sequenciamento rígido) |
+| Persistência NoSQL (MongoDB) | ✅ |
+| Métricas de tempos (geração, enqueue, processamento) | ✅ |
+| Contadores por prioridade | ✅ |
+| Endpoint consolidado (/pedidos) | ✅ |
+| Logs acessíveis (/pedidos/logs) | ✅ |
+| Reset limpo (/pedidos/reset) | ✅ |
+| Cancelamento seguro (/pedidos/cancel) | ✅ |
+| Bloqueio de execução concorrente | ✅ |
+| Histórico de execuções | ✅ |
+| Throughput + ETA (extra) | ✅ |
+| Health detalhado | ✅ |
+
+> Interface visual (frontend) não faz parte desta entrega – foco no backend conforme solicitado.
 
 ---
 
 ## Descrição do Desafio
 
-O desafio consiste em simular uma plataforma de e-commerce capaz de:
+Simular um pipeline de e-commerce em larga escala que:
 
-1. Gerar 1 milhão (ou mais) de pedidos randomizados.
-2. Diferenciar pedidos VIP (clientes DIAMANTE) de pedidos normais.
-3. Processar pedidos em fila priorizando VIP antes de NORMAL.
-4. Registrar tempos de geração, enfileiramento, processamento e total.
-5. Permitir reset do sistema para nova execução.
-6. Expor uma API única (`GET /pedidos`) com métricas completas.
-7. Exibir logs detalhados do processo.
-8. Ser escalável e monitorável.
-
----
-
-## Exemplo
-
-<img src="/nest-backend/example/nest-example.png" alt="" width="800"/> 
+1. Gera 1.000.000+ pedidos.
+2. Classifica pedidos VIP (tier DIAMANTE) vs NORMAL.
+3. Usa fila (Bull + Redis) garantindo que todos os VIP sejam processados antes dos NORMAL.
+4. Exibe tempos de geração, enfileiramento, processamento (janela inicial/final e duração), contagens e tempo global.
+5. Fornece um endpoint de status central.
+6. Suporta reset completo.
+7. Expõe logs.
+8. Persiste histórico de execuções.
 
 ---
 
-## Objetivos Atendidos
+## Status de Atendimento aos Requisitos
 
-| Requisito | Status |
-|-----------|--------|
-| Geração massiva (≥ 1M) | ✅ |
-| Campos completos com prioridade | ✅ |
-| Banco NoSQL escalável (MongoDB) | ✅ |
-| Fila com priorização (Bull + Redis) | ✅ |
-| Processamento VIP antes de NORMAL | ✅ |
-| Status distintos e observações ajustadas | ✅ |
-| Métricas de tempo e contagem por prioridade | ✅ |
-| Registros históricos de execuções (process_runs) | ✅ |
-| Endpoint único `/pedidos` com resumo | ✅ |
-| Logs acessíveis via `/pedidos/logs` | ✅ |
-| Health check de fila `/pedidos/health/queue` | ✅ |
-| Reset completo `/pedidos/reset` | ✅ |
-| Cancelamento de execução em andamento `/pedidos/cancel` | ✅ |
-| Proteção contra execução concorrente | ✅ |
+Todos os requisitos do enunciado foram atendidos. Recursos adicionais adicionados:
+- ETA e throughput em tempo real.
+- Cancelamento cooperativo.
+- Health check com diagnósticos.
+- Inspeção de jobs / estados de fila.
+- Persistência de histórico.
 
 ---
 
-## Arquitetura Geral
+## Arquitetura de Alto Nível
 
-Componentes principais:
+- **NestJS** com camadas: Domain / Application / Infrastructure / Presentation.
+- **MongoDB**: pedidos e execuções.
+- **Redis**: backend da fila.
+- **Bull (v3)**: orquestração de jobs.
+- **Logs em arquivo** (opcional via `BACKEND_LOGS=true`).
+- **Métricas em memória** com snapshots persistidos.
 
-- NestJS (camadas Modules / Controllers / UseCases / Infrastructure / Domain / Shared)
-- Redis: backend da fila (Bull)
-- MongoDB: persistência de pedidos e execuções
-- Bull: gerenciamento de jobs (`generateOrders` e `processOrder`)
-- Logs em arquivos (quando `BACKEND_LOGS=true`)
-- Métricas acessíveis via endpoints
+### Diagrama (Mermaid)
 
-### Diagrama Simplificado
-
-```
-┌──────────┐     POST /pedidos/generate     ┌──────────────┐
-│  Cliente │ ─────────────────────────────▶ │  API NestJS  │
-└──────────┘                                │  (Controller)│
-                                             │              │
-                                             ▼              │
-                                      ┌────────────┐        │
-                                      │ UseCases   │        │
-                                      │ (Generate) │        │
-                                      └─────┬──────┘        │
-                                            │ adiciona job  │
-                                            ▼               │
-                                      ┌────────────┐        │
-                                      │   Bull     │        │
-                                      │ (Redis)    │◀───────┘
-                                      └────┬───────┘
-                                           │ consumers
-                                           ▼
-                                   ┌──────────────┐
-                                   │ OrdersProcessor
-                                   │ - gera pedidos
-                                   │ - enfileira VIP
-                                   │ - espera fila
-                                   │ - enfileira NORMAL
-                                   │ - espera final
-                                   └──────┬────────
-                                          │
-                              bulk insert │   atualiza
-                                          ▼
-                                   ┌──────────────┐
-                                   │  MongoDB     │
-                                   └──────────────┘
+```mermaid
+flowchart TD
+    A[POST /pedidos/generate] --> B(GenerateOrdersUseCase)
+    B --> C[Enfileira job generateOrders]
+    C -->|Bull| D[OrdersGenerationProcessor]
+    D -->|bulk insert| M[(MongoDB)]
+    D -->|enqueue VIP| Q[(Redis Queue)]
+    Q --> W[OrdersWorkerProcessor]
+    W -->|update status| M
+    W -->|marca início/fim| L[LogsUseCase]
+    L -->|persist snapshot| R[(process_runs)]
+    S[GET /pedidos] --> L
+    S --> M
+    S --> ST[(State Service)]
 ```
 
 ---
 
-## Fluxo Completo (Fases)
+## Fluxo Completo de Fases
 
-As fases do processamento (expostas em `/pedidos` e `/pedidos/health/queue`):
-
-1. `IDLE` – Aguardando início.
-2. `GENERATING` – Gerando pedidos (chunks de 10.000).
-3. `ENQUEUE_VIP` – Enfileirando VIP (ocorre dentro da geração).
-4. `WAITING_VIP_DRAIN` – Esperando fila processar todos VIP.
-5. `ENQUEUE_NORMAL` – Enfileirando pedidos NORMAL.
-6. `WAITING_NORMAL_DRAIN` – Aguardando processamento NORMAL.
-7. `DONE` – Execução concluída.
-8. `ERROR` – Erro ou cancelamento.
+| Fase | Descrição |
+|------|-----------|
+| IDLE | Aguardando início |
+| GENERATING | Criando e inserindo chunks |
+| ENQUEUE_VIP | Enfileirando VIP (durante geração) |
+| WAITING_VIP_DRAIN | Esperando fila VIP esvaziar |
+| ENQUEUE_NORMAL | Enfileirando NORMAL após VIP |
+| WAITING_NORMAL_DRAIN | Aguardando fila NORMAL esvaziar |
+| DONE | Execução concluída |
+| ABORTED | Cancelada pelo usuário |
+| ERROR | Falha ou timeout |
 
 ---
 
 ## Modelo de Dados
 
-### Order (collection: orders)
+### Pedido (`orders`)
+
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| id | string (UUID) | Identificador lógico |
-| cliente | string | Nome simulado do cliente |
-| valor | number | Valor aleatório |
-| tier | enum (BRONZE/PRATA/OURO/DIAMANTE) | Nível do cliente |
-| priority | enum (VIP/NORMAL) | Derivado (DIAMANTE => VIP) |
-| observacoes | string | Texto randômico + atualizado no processamento |
-| status | string | 'pendente' -> 'enviado com prioridade' / 'processado sem prioridade' |
-| createdAt | Date | Data de criação |
+| id | UUID | Identificador lógico |
+| cliente | string | Nome simulado |
+| valor | number | Preço aleatório |
+| tier | enum | BRONZE / PRATA / OURO / DIAMANTE |
+| priority | enum | VIP / NORMAL (derivado) |
+| observacoes | string | Nota inicial → atualizada após processamento |
+| status | string | 'pendente' → 'processado' |
+| createdAt | Date | Timestamp de criação |
 
-Índices:
-- `id (unique)`
-- `priority`
-- `priority + status` (para contagem rápida de processados)
-- `createdAt`
+Índices: `id (único)`, `priority`, `(priority,status)`, `createdAt`.
 
-### ProcessRun (collection: process_runs)
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| runId | string (UUID) | ID da execução |
-| generationTimeMs | number | Tempo de geração |
-| processingTimeVIPMs | number | Janela de processamento VIP |
-| processingTimeNormalMs | number | Janela de processamento NORMAL |
-| startVIP / endVIP | Date | Início/fim VIP |
-| startNormal / endNormal | Date | Início/fim NORMAL |
-| totalProcessedVIP / totalProcessedNormal | number | Quantidade final processada |
-| totalTimeMs | number | Soma (generation + VIP + NORMAL) |
-| enqueueVipTimeMs / enqueueNormalTimeMs | number | Tempos de enfileiramento |
-| createdAt | Date | Registro |
+### Execução (`process_runs`)
+
+| Campo | Descrição |
+|-------|-----------|
+| runId | UUID da execução |
+| generationTimeMs | Tempo de geração total |
+| processingTimeVIPMs / Normal | Janela primeira→última processada |
+| startVIP / endVIP | Limites VIP |
+| startNormal / endNormal | Limites NORMAL |
+| totalProcessedVIP / Normal | Contadores finais |
+| enqueueVipTimeMs / Normal | Tempo de enfileiramento |
+| totalTimeMs | Soma de segmentos |
+| createdAt | Registro |
 
 ---
 
 ## Estratégia de Geração de Pedidos
 
-- Feita via job `generateOrders`.
-- Geração em blocos (`chunkSize = 10000`) para reduzir consumo de memória.
-- Para cada pedido:
-    - tier aleatório.
-    - priority = VIP se tier = DIAMANTE, senão NORMAL.
-    - observação aleatória de lista predefinida.
-    - status inicial = 'pendente'.
-- VIP já são enfileirados enquanto gera.
-- NORMAL só após a drenagem da fila VIP.
+- Chunk configurável: `GENERATION_CHUNK_SIZE` (padrão 10.000).
+- Cada chunk:
+    - Cria pedidos randômicos.
+    - Persiste em bulk (`insertMany`).
+    - Enfileira imediatamente só os VIP.
+- NORMAL é postergado até finalização TOTAL dos VIP.
+- Progresso incremental para ETA e throughput.
 
 ---
 
-## Processamento Prioritário (VIP -> NORMAL)
+## Processamento Prioritário (VIP → NORMAL)
 
-1. Gerou e enfileirou todos VIP → aguarda queue drenar.
-2. Depois enfileira NORMAL em lotes (10.000).
-3. Atualiza cada pedido individualmente (status + observações).
-4. Marca tempos (start/end por prioridade) de forma incremental.
+1. Gera + enfileira VIP a cada chunk.
+2. Após gerar tudo, espera VIP terminar (fila drenada).
+3. Enfileira NORMAL em lotes.
+4. Espera drenagem NORMAL.
+5. Marca execução como DONE.
 
----
-
-## Fila e Concorrência
-
-- Biblioteca: `@nestjs/bull` (Bull v3).
-- Redis obrigatório.
-- Concurrency configurável via `ORDERS_QUEUE_CONCURRENCY` (padrão: 25).
-- Job types:
-    - `generateOrders` (único controlador da execução macro).
-    - `processOrder` (um por pedido).
-- Prioridades:
-    - VIP => prioridade 1
-    - NORMAL => prioridade 2
+Nenhum NORMAL é processado antes de todos VIP concluírem.
 
 ---
 
-## Logs, Métricas e Persistência de Execuções
+## Fila, Concorrência e Backpressure
 
-### Fontes de Métricas (LogsUseCase)
-- Geração: `generationTimeMs`
-- Processamento (janela): `processingTimeVIPMs`, `processingTimeNormalMs`
-- Contagens processadas: consulta com filtro `status != 'pendente'`.
-
-### Logs em Disco
-Ativos se `BACKEND_LOGS=true`:
-- `shared/logs/log.messages`
-- `shared/logs/warn.messages`
-- `shared/logs/errors.messages`
-
-### Endpoint de Logs
-`GET /pedidos/logs?lines=300`
-
-Retorna:
-- Últimas linhas de cada tipo.
-- Quick stats (VIP/NORMAL processados nos logs).
-
-### Persistência Histórica
-Ao concluir (ou mesmo com erro), salva um registro em `process_runs`.
+| Aspecto | Implementação |
+|---------|---------------|
+| Nome da fila | `orders-queue` |
+| Job macro | `generateOrders` |
+| Job worker | `processOrder` |
+| Prioridade VIP | 1 |
+| Prioridade NORMAL | 2 |
+| Concorrência | `ORDERS_QUEUE_CONCURRENCY` (default 25) |
+| Backpressure | Chunk + batch + espera de dreno |
 
 ---
 
-## Cancelamento Seguro do Processo
+## Métricas, Logs e Histórico de Execuções
+
+| Métrica | Origem |
+|---------|--------|
+| Tempo de geração | Loop de geração |
+| Tempos de enqueue | Fases VIP / NORMAL |
+| Janelas processamento | markStart / markEnd por prioridade |
+| Throughput | Cálculo sobre janela temporal |
+| ETA | Processado vs alvo + taxa média |
+| Contadores processados | Query (status != 'pendente') |
+| Tempo total | Soma de segmentos registrados |
+| Fase | State service |
+| Histórico | Persistência em `process_runs` |
+| Alvo vs gerado | Contadores internos |
+
+Logs em arquivo (opcional) + endpoint `/pedidos/logs`.
+
+---
+
+## Cancelamento Seguro (Abort Cooperativo)
 
 Endpoint: `POST /pedidos/cancel`
 
-Parâmetros (query):
-- `purge=true|false` (limpa fila)
-- `removePending=true|false` (remove pedidos ainda pendentes do Mongo)
-- `resetLogs=true|false` (limpa métricas em memória)
+| Parâmetro | Default | Descrição |
+|-----------|---------|-----------|
+| purge | true | Limpa estados da fila (best effort) |
+| removePending | true | Remove pedidos ainda 'pendente' do Mongo |
+| resetLogs | false | Reseta métricas |
 
-Passos Internos:
-1. Seta `aborted = true`.
-2. Fase muda para `ERROR`.
-3. Pausa fila.
-4. Grace period curto.
-5. (Opcional) purga jobs.
-6. (Opcional) remove pedidos pendentes.
-7. (Opcional) reseta logs.
+Fluxo:
+1. Seta flag de aborto.
+2. Pausa a fila.
+3. (Opcional) Purga jobs.
+4. (Opcional) Remove pedidos pendentes.
+5. (Opcional) Reseta logs.
+6. Espera parar (ou timeout).
 
-Após cancelar, pode iniciar nova geração normalmente.
+Jobs ativos finalizam normalmente (consistência).
 
 ---
 
-## Endpoints da API
+## Referência da API
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| POST | `/pedidos/generate?quantity=NUM` | Inicia fluxo completo (se não houver outro ativo) |
-| GET | `/pedidos` | Status consolidado (tempos, fases, contagens) |
-| GET | `/pedidos/health/queue` | Health da fila / processamento |
-| GET | `/pedidos/logs?lines=N` | Últimos logs e estatísticas |
-| POST | `/pedidos/reset` | Limpa banco de pedidos, filas e logs |
-| POST | `/pedidos/cancel` | Aborta execução em andamento |
-| POST | `/pedidos/queue/pause` | Pausa fila |
-| POST | `/pedidos/queue/resume` | Resume fila |
-| POST | `/pedidos/queue/clean?state=wait` | Limpa jobs por estado |
+| POST | `/pedidos/generate?quantity=N` | Inicia pipeline (impede paralelismo) |
+| GET | `/pedidos` | Status consolidado (requisito principal) |
+| GET | `/pedidos/logs?lines=500` | Últimas linhas de log |
+| GET | `/pedidos/health/queue` | Saúde + diagnósticos |
+| POST | `/pedidos/cancel` | Cancelar execução em andamento |
+| POST | `/pedidos/reset` | Limpa DB + métricas + fila |
+| POST | `/pedidos/queue/pause` | Pausa globalmente |
+| POST | `/pedidos/queue/resume` | Retoma fila |
+| POST | `/pedidos/queue/clean?state=wait` | Limpa um estado |
+| GET | `/pedidos/queue/status` | Contagem bruta da fila |
+| GET | `/pedidos/queue/jobs?types=waiting,active` | Lista jobs |
 | POST | `/pedidos/queue/close` | Fecha conexão da fila |
-| GET | `/pedidos/queue/status` | Contadores da fila |
-| GET | `/pedidos/queue/jobs?types=waiting,active` | Lista jobs (simplificado) |
-| POST | `/pedidos/process` | (Depreciado) – não usado mais |
+
+---
+
+## Formato da Resposta de /pedidos
+
+Exemplo reduzido:
+```json
+{
+  "generationTimeMs": 18543,
+  "enqueueVipTimeMs": 912,
+  "enqueueNormalTimeMs": 2411,
+  "processing": {
+    "vip": { "start": "2025-09-30T09:10:12.123Z", "end": "2025-09-30T09:11:05.456Z", "timeMs": 53233, "count": 124578 },
+    "normal": { "start": "2025-09-30T09:11:06.010Z", "end": null, "timeMs": 28765, "count": 203331 }
+  },
+  "totalTimeMs": 104921,
+  "counts": { "vip": 124578, "normal": 203331 },
+  "phase": "WAITING_NORMAL_DRAIN",
+  "lastRunId": "ec0f9c0e-5d44-4dc2-b21d-2fd7f0ef9a80",
+  "throughput": { "vip": 2450.12, "normal": 3221.44, "overall": 2811.77 },
+  "eta": { "estimatedMs": 512345, "progressPercent": 32.11 },
+  "progress": {
+    "target": 1000000,
+    "generated": 500000,
+    "processedTotal": 327909
+  }
+}
+```
 
 ---
 
 ## Variáveis de Ambiente
 
-| Variável | Default | Descrição |
-|----------|---------|-----------|
-| `MONGO_URI` | (obrig.) | String de conexão Mongo |
-| `REDIS_HOST` | `localhost` | Host do Redis |
-| `REDIS_PORT` | `6379` | Porta do Redis |
-| `PORT` | `3000` | Porta HTTP |
-| `BACKEND_LOGS` | `true` | Ativa escrita em disco |
-| `MAX_ORDERS` | `1500000` | Limite hard de geração |
-| `ORDERS_QUEUE_CONCURRENCY` | `25` | Concurrency do processamento |
+Apenas `MONGO_URI` é realmente obrigatória. As demais possuem default interno.
+
+| Variável | Default | Obrigatória | Descrição |
+|----------|---------|-------------|-----------|
+| MONGO_URI | — | ✅ | String de conexão com MongoDB |
+| REDIS_HOST | localhost | ❌ | Host do Redis |
+| REDIS_PORT | 6379 | ❌ | Porta do Redis |
+| PORT | 3000 | ❌ | Porta HTTP |
+| BACKEND_LOGS | false* | ❌ | Ativa logs em arquivo (`true` para habilitar) |
+| MAX_ORDERS | 1500000 | ❌ | Limite superior de proteção |
+| GENERATION_CHUNK_SIZE | 10000 | ❌ | Tamanho dos chunks de geração |
+| NORMAL_ENQUEUE_BATCH_SIZE | 10000 | ❌ | Lotes de enfileiramento NORMAL |
+| ORDERS_QUEUE_CONCURRENCY | 25 | ❌ | Concorrência dos workers |
+| LOG_PROGRESS_EVERY_MS | 5000 | ❌ | Intervalo de logs de progresso |
+| LOG_MEMORY | false | ❌ | Log de uso de memória |
+
+> *Se não definida explicitamente como "true", o serviço assume comportamento silencioso (sem persistência de arquivo).
 
 ---
 
-## Como Executar Localmente
+## Exemplo de .env
 
-Pré-requisitos:
-- Node 18+
-- Redis em execução
-- MongoDB em execução
-- PNPM (recomendado)
+### Mínimo
+```
+MONGO_URI=mongodb://localhost:27017/ecommerce
+```
 
-Passos:
+### Com autenticação
+```
+MONGO_URI=mongodb://usuario:senha@localhost:27017/ecommerce?authSource=admin
+```
+
+### Desenvolvimento com logs
+```
+MONGO_URI=mongodb://localhost:27017/ecommerce
+BACKEND_LOGS=true
+```
+
+### Ajustado para maior concorrência (cautela)
+```
+MONGO_URI=mongodb://localhost:27017/ecommerce
+ORDERS_QUEUE_CONCURRENCY=60
+GENERATION_CHUNK_SIZE=15000
+NORMAL_ENQUEUE_BATCH_SIZE=15000
+```
+
+---
+
+## Execução Local
 
 ```bash
 # 1. Instalar dependências
-pnpm install
+npm install
 
-# 2. Subir Redis e Mongo (exemplo via Docker)
+# 2. Subir Redis e Mongo (exemplo rápido)
 docker run -d --name redis -p 6379:6379 redis:7
-docker run -d --name mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=vidigalcode -e MONGO_INITDB_ROOT_PASSWORD=test1234 mongo:6
+docker run -d --name mongo -p 27017:27017 mongo:6
 
-# 3. Criar .env (exemplo)
-cp .env.example .env  # se existir
-# ou editar manualmente
+# 3. Criar .env
+echo "MONGO_URI=mongodb://localhost:27017/ecommerce" > .env
 
-# 4. Start aplicação
-pnpm start
+# 4. Iniciar
+npm run start
 
-# 5. Gerar pedidos
+# 5. Iniciar pipeline
 curl -X POST "http://localhost:3000/pedidos/generate?quantity=1000000"
+```
+
+---
+
+## Docker (Opcional)
+
+```yaml
+version: "3.9"
+services:
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    ports: ["27017:27017"]
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports: ["6379:6379"]
+  api:
+    build: ./nest-backend
+    environment:
+      MONGO_URI: mongodb://mongo:27017/ecommerce
+      REDIS_HOST: redis
+      BACKEND_LOGS: "true"
+    depends_on:
+      - mongo
+      - redis
+    ports:
+      - "3000:3000"
 ```
 
 ---
 
 ## Exemplos de Uso (curl)
 
-Gerar 200 mil pedidos:
 ```bash
-curl -X POST "http://localhost:3000/pedidos/generate?quantity=200000"
-```
+# Gerar 1 milhão
+curl -X POST "http://localhost:3000/pedidos/generate?quantity=1000000"
 
-Acompanhar status:
-```bash
+# Status
 curl "http://localhost:3000/pedidos" | jq
-```
 
-Health da fila:
-```bash
-curl "http://localhost:3000/pedidos/health/queue" | jq
-```
-
-Ver logs (últimas 300 linhas):
-```bash
+# Logs (últimas 300 linhas)
 curl "http://localhost:3000/pedidos/logs?lines=300" | jq
-```
 
-Cancelar em andamento:
-```bash
+# Cancelar execução
 curl -X POST "http://localhost:3000/pedidos/cancel?purge=true&removePending=true&resetLogs=false"
-```
 
-Reset total:
-```bash
+# Reset completo
 curl -X POST "http://localhost:3000/pedidos/reset"
+
+# Status da fila
+curl "http://localhost:3000/pedidos/queue/status" | jq
+
+# Jobs waiting + active
+curl "http://localhost:3000/pedidos/queue/jobs?types=waiting,active" | jq
 ```
 
 ---
 
-## Health & Monitoramento
+## Health & Monitoring
 
 `GET /pedidos/health/queue` retorna:
 - Contadores: waiting, active, completed, failed, delayed
-- Fase atual do processor
-- Flags: hasFailedJobs, isStuck, paused
-- Tempos de enfileiramento
-- Estado de abort
+- Fase atual
+- Flags: `isProcessing`, `aborting`
+- Heurísticas: `hasFailedJobs`, `isStuck`, `aborted`
+- Classificação final: `healthy | degraded | paused | aborted | error`
 
-Uso típico:
-- Detectar stuck: `active > 0` e `phase` não está em uma fase de processamento.
-- Fila pausada = status `paused`.
-
----
-
-## Escalabilidade e Performance
-
-Estratégias adotadas:
-- Geração em chunks (10k) → reduz memória.
-- `insertMany` (bulk) → maior throughput no Mongo.
-- Prioridade via Bull → VIP primeiro.
-- Concurrency configurável → adequado a CPU/RAM/IO.
-- Índices otimizando contagens de processados.
-
-Pontos de atenção:
-- Atualização individual por pedido (updateOne). Em cenários extremos pode ser convertido em `bulkWrite`.
-- Redis deve estar em host rápido (latência impacta enfileiramento).
-- Monitorar I/O do Mongo sob carga.
+Utilidade:
+- Detectar travamentos
+- Monitorar acúmulo de falhas
+- Base para alertas
 
 ---
 
-## Boas Práticas e Decisões Técnicas
+## Escalabilidade e Notas de Performance
+
+| Camada | Estratégia Atual | Possível Evolução |
+|--------|------------------|--------------------|
+| Geração | Chunk + insertMany | Paralelizar ou streaming multi-processo |
+| Processamento | Concorrência fixa | Ajuste dinâmico adaptativo |
+| Updates | Update documento a documento | `bulkWrite` batelado |
+| Métricas | Consulta de contagem no Mongo | Cache incremental/Redis |
+| Prioridade | Uma fila com prioridade | Fila dupla + coordenação |
+| Logs | Append síncrono (opcional) | Buffer assíncrono |
+| ETA | Média simples global | Modelo fase-aware / exponencial |
+
+---
+
+## Decisões Técnicas
 
 | Decisão | Justificativa |
 |---------|---------------|
-| Separar UseCases | Clareza de intenção (SRP) |
-| Persistir histórico (process_runs) | Auditoria e comparações |
-| Fila por prioridade | Evita starvation de VIP |
-| Cancelamento cooperativo (flag aborted) | Evita corrupção de estado |
-| Logs em arquivo e endpoint de leitura | Transparência sem ferramentas externas obrigatórias |
-| Limite MAX_ORDERS configurável | Proteção operacional |
-| Fases explícitas | Observabilidade e UX (frontend) |
-| Contagem só de processados (status != pendente) | Métrica real de throughput |
+| Dois estágios (VIP → NORMAL) | Garantir prioridade absoluta |
+| Abort cooperativo | Evita inconsistências parciais |
+| Contagem por status | Só conta realmente processados |
+| Histórico de execuções | Comparação e auditoria |
+| Fases explícitas | Observabilidade clara |
+| ETA + Throughput | Visão operacional útil |
+| Logs em arquivo | Simplicidade sem stack externa |
 
 ---
 
-## Resolução de Problemas (Troubleshooting)
+## Limitações Conhecidas
 
-| Problema | Causa Comum | Solução |
-|----------|-------------|---------|
-| `ECONNREFUSED Redis` | Redis não iniciou | Subir Redis ou corrigir host/porta |
-| Mongo não conecta | Usuário/senha incorretos | Validar URI `MONGO_URI` |
-| Fase travada em `WAITING_VIP_DRAIN` | Jobs VIP ainda ativos ou stuck | Ver `/pedidos/health/queue`, checar failed |
-| Contagens não aumentam | Geração não iniciou | Ver `POST /pedidos/generate` resposta |
-| Cancel não “limpa tudo” | Jobs ativos ainda finalizando | Aguardar alguns segundos, depois reset |
-| Many failed jobs | Falha Redis / Mongo instável | Checar logs de erro (`/pedidos/logs`) |
-| Execução concorrente bloqueada | Já existe processamento | Cancelar ou aguardar concluir |
+| Limitação | Impacto |
+|-----------|---------|
+| Fase/abort não persistidos | Reinício perde contexto |
+| Cancel não encerra jobs ativos instantaneamente | Finalização graciosa |
+| Logging síncrono pode reduzir throughput | Pequeno sob alta volumetria |
+| `totalTimeMs` não é wall-clock exato | Interpretação analítica necessária |
+| Sem métricas Prometheus padrão | Integração manual se desejado |
+
+---
+
+## Troubleshooting
+
+| Sintoma | Causa Provável | Ação |
+|---------|----------------|------|
+| Travado em WAITING_VIP_DRAIN | VIP ainda ativos | Ver `/pedidos/queue/status` |
+| Erro ao gerar | Quantidade > MAX_ORDERS | Ajustar env |
+| Throughput baixo | I/O Mongo/Redis lento | Ajustar concorrência ou chunk |
+| Cancel “demora” | Jobs ativos terminando | Aguardar ou reset |
+| ETA nula | Pouco progresso ainda | Esperar |
+| Muitos failed | Falha infra / update | Ver `/pedidos/logs` |
+| Fase perdida após restart | Estado volátil | Persistir estado (melhoria futura) |
 
 ---
 
 ## Possíveis Evoluções Futuras
 
-- Exportar métricas Prometheus (`/metrics`).
-- Adotar BullMQ (suporte futuro, melhor controle).
-- Adicionar throughput (jobs/seg) calculado.
-- Implementar `bulkWrite` no processamento de pedidos.
-- Reidratar métricas após restart (persistindo estado incremental).
-- Streaming de logs em WebSocket.
-- Endpoint `/pedidos/cancel/status`.
-- Implementar “prioridade dinâmica” (ex: OURO semi-prioritário).
+- Migração para BullMQ.
+- Persistência da fase para retomar após falha.
+- Endpoint Prometheus (`/metrics`).
+- Streaming de logs (SSE/WebSocket).
+- Dead-letter para falhas recorrentes.
+- BulkWrite otimizado para updates de status.
+- Sharding multi-tenant.
+- Ajuste adaptativo de concorrência (feedback loop).
+- Reprocessamento seletivo ou retomada parcial.
+- Observabilidade via OpenTelemetry.
 
 ---
 
 ## Licença
 
-Defina a licença conforme necessidade (MIT, Apache-2.0, etc.).  
-Exemplo (MIT):
+MIT (exemplo)
 
 ```
-MIT License - Sinta-se livre para usar, modificar e distribuir.
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy...
 ```
 
----
+
+
 
