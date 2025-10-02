@@ -21,13 +21,18 @@ export class OrdersQueueService {
       priority,
       removeOnComplete: { count: 500 },
       removeOnFail: { count: 100 },
-      attempts: 1,
+      attempts: 3, // Increased from 1 for better reliability
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
     };
     await this.ordersQueue.add('processOrder', order, opts);
   }
 
   async addBulkOrdersToQueue(orders: Order[]): Promise<void> {
     if (!orders.length) return;
+
     const bulkJobs = orders.map((order) => ({
       name: 'processOrder' as const,
       data: order,
@@ -35,7 +40,11 @@ export class OrdersQueueService {
         priority: order.priority === 'VIP' ? 1 : 2,
         removeOnComplete: { count: 500 },
         removeOnFail: { count: 100 },
-        attempts: 1,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
       } satisfies JobsOptions,
     }));
 
@@ -102,6 +111,53 @@ export class OrdersQueueService {
       paused: boolean;
     };
     return result;
+  }
+
+  async getQueueStats(): Promise<{
+    counts: QueueCounts & { paused: boolean };
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+    delayed: number;
+    throughput: {
+      completedPerSecond: number;
+      failedPerSecond: number;
+    };
+  }> {
+    const counts = await this.getCounts();
+
+    // Modern scaling: Calculate throughput metrics
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+
+    const recentCompleted = await this.ordersQueue.getJobs(
+      ['completed'],
+      0,
+      1000,
+    );
+    const recentFailed = await this.ordersQueue.getJobs(['failed'], 0, 1000);
+
+    const completedInLastMinute = recentCompleted.filter(
+      (job) => job.finishedOn && job.finishedOn > oneMinuteAgo,
+    ).length;
+
+    const failedInLastMinute = recentFailed.filter(
+      (job) => job.failedReason && job.finishedOn && job.finishedOn > oneMinuteAgo,
+    ).length;
+
+    return {
+      counts,
+      waiting: counts.waiting || 0,
+      active: counts.active || 0,
+      completed: counts.completed || 0,
+      failed: counts.failed || 0,
+      delayed: counts.delayed || 0,
+      throughput: {
+        completedPerSecond: Math.round((completedInLastMinute / 60) * 100) / 100,
+        failedPerSecond: Math.round((failedInLastMinute / 60) * 100) / 100,
+      },
+    };
   }
 
   async closeQueue(): Promise<void> {

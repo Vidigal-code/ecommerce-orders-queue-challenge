@@ -5,7 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)](https://nextjs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-green.svg)](https://www.mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.2+-red.svg)](https://redis.io/)
-[![BullMQ](https://img.shields.io/badge/BullMQ-5.x-orange.svg)](https://docs.bullmq.io/)
+[![BullMQ](https://img.shields.io/badge/BullMQ-5.59+-orange.svg)](https://docs.bullmq.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 ## 📋 Visão Geral
@@ -16,7 +16,7 @@ Esta é uma implementação **pronta para produção, 100% em conformidade** com
 
 - 🎯 **Geração de 1 Milhão de Pedidos** com dados aleatórios (ID, cliente, valor, tier, observações)
 - 📊 **Banco de Dados NoSQL** (MongoDB) com arquitetura escalável
-- ⚡ **Processamento de Fila com Prioridade** com BullMQ e Redis
+- ⚡ **BullMQ 5.59+** com padrões modernos de escalabilidade (pooling de conexões, backoff exponencial, confiabilidade aprimorada)
 - 👑 **Processamento VIP Primeiro** - Todos os pedidos tier DIAMOND processados antes dos outros
 - 🔄 **Atualizações em Tempo Real** via WebSocket
 - 📈 **Métricas Abrangentes** - Tempos de execução, throughput, ETA
@@ -93,6 +93,31 @@ Esta é uma implementação **pronta para produção, 100% em conformidade** com
 │     └─ Dashboard exibe progresso, logs, métricas             │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+### 🎯 Padrões Modernos de Escalabilidade BullMQ
+
+Esta implementação utiliza **BullMQ 5.59+** com padrões de escalabilidade de ponta:
+
+#### Pooling de Conexões e Confiabilidade
+- **Pooling IORedis**: Conexões Redis otimizadas com `maxRetriesPerRequest: null`
+- **Conexões Lazy**: Compartilhamento eficiente entre filas
+- **Tratamento de Erros Aprimorado**: `commandTimeout`, `connectTimeout` e `retryDelayOnFailover`
+
+#### Confiabilidade e Backoff de Jobs
+- **Backoff Exponencial**: Estratégia inteligente de retry com base `delay: 2000ms`
+- **Tentativas Aumentadas**: 3 tentativas vs 1 (melhora dramaticamente a taxa de sucesso)
+- **Limpeza Baseada em Idade**: Jobs mantidos por 24h (concluídos) e 7 dias (falhados) para análise
+
+#### Otimizações de Performance
+- **Operações em Massa**: `addBulk()` para enfileiramento eficiente
+- **Processamento em Chunks**: 25k pedidos por chunk previne problemas de memória
+- **Monitoramento de Throughput**: Métricas em tempo real com concluídos/falhados por segundo
+- **Health Checks**: Monitoramento de jobs ativos com detecção de jobs travados
+
+#### Gerenciamento de Filas
+- **Aplicação de Prioridade**: Processamento VIP-first rigoroso com verificação
+- **Controle de Fluxo**: Mecanismos inteligentes de espera e drenagem
+- **Mecanismos de Recuperação**: Recuperação automática de jobs travados e reparo de filas
 
 ---
 

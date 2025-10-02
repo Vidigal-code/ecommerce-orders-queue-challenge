@@ -1,11 +1,39 @@
 # 🚀 E-commerce Orders Queue Challenge - 100% Complete Solution
 
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.sh└──────────────────────────────────────────────────────────────┘
+```
+
+### 🎯 Modern BullMQ Scaling Patterns
+
+This implementation leverages **BullMQ 5.59+** with cutting-edge scaling patterns:
+
+#### Connection Pooling & Reliability
+- **IORedis Connection Pooling**: Optimized Redis connections with `maxRetriesPerRequest: null`
+- **Lazy Connections**: Efficient connection sharing between queues
+- **Enhanced Error Handling**: `commandTimeout`, `connectTimeout`, and `retryDelayOnFailover`
+
+#### Job Reliability & Backoff
+- **Exponential Backoff**: Smart retry strategy with `delay: 2000ms` base
+- **Increased Retry Attempts**: 3 attempts vs 1 (dramatically improves success rate)
+- **Age-based Cleanup**: Jobs kept for 24h (completed) and 7 days (failed) for analysis
+
+#### Performance Optimizations
+- **Bulk Operations**: `addBulk()` for efficient job enqueuing
+- **Chunked Processing**: 25k orders per chunk prevents memory issues
+- **Throughput Monitoring**: Real-time metrics with completed/failed per second
+- **Health Checks**: Active job monitoring with stuck job detection
+
+#### Queue Management
+- **Priority Enforcement**: Strict VIP-first processing with verification
+- **Flow Control**: Smart waiting and draining mechanisms
+- **Recovery Mechanisms**: Automatic stuck job recovery and queue repair
+
+---elds.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11+-red.svg)](https://nestjs.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)](https://nextjs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-green.svg)](https://www.mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.2+-red.svg)](https://redis.io/)
-[![BullMQ](https://img.shields.io/badge/BullMQ-5.x-orange.svg)](https://docs.bullmq.io/)
+[![BullMQ](https://img.shields.io/badge/BullMQ-5.59+-orange.svg)](https://docs.bullmq.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 ## 📋 Overview
@@ -16,10 +44,10 @@ This is a **production-ready, 100% compliant** implementation of the E-commerce 
 
 - 🎯 **1 Million Orders Generation** with random data (ID, customer, amount, tier, observations)
 - 📊 **NoSQL Database** (MongoDB) with scalable architecture
-- ⚡ **Priority Queue Processing** with BullMQ and Redis
+- ⚡ **BullMQ 5.59+** with modern scaling patterns (connection pooling, exponential backoff, enhanced reliability)
 - 👑 **VIP-First Processing** - All DIAMOND tier orders processed before others
 - 🔄 **Real-time Updates** via WebSocket
-- 📈 **Comprehensive Metrics** - Execution times, throughput, ETA
+- 📈 **Comprehensive Metrics** - Execution times, throughput, ETA with modern monitoring
 - 🎨 **Modern Dashboard** with Next.js 15 and React 19
 - 🐳 **Complete Docker Orchestration** - Single command deployment
 - 🏗️ **DDD Modular Architecture** - Clean, maintainable codebase

@@ -20,7 +20,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/bull": "^11.0.3",
     "@nestjs/bullmq": "^11.0.3",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.2",
@@ -29,8 +28,7 @@
     "@nestjs/platform-socket.io": "^11.1.6",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.6",
-    "bull": "^4.16.5",
-    "bullmq": "^5.58.9",
+    "bullmq": "^5.59.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "mongodb": "^6.20.0",
