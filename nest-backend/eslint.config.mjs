@@ -40,6 +40,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unnecessary-type-assertion': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
     },
   },
 );

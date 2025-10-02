@@ -24,7 +24,6 @@ export interface OrdersStatusDto {
     normal: number;
   };
   phase: Phase;
-  lastRunId?: string;
   throughput: {
     vip: number;
     normal: number;

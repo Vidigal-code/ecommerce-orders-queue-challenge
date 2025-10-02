@@ -27,6 +27,10 @@ export default function QueuePage() {
                         <p>
                             Cleaning a state removes only that phase. Use Cancel or Reset for full purge.
                         </p>
+                        <p className="mt-2 text-amber-400">
+                            Se a fila aparecer travada, verifique jobs com falha e use a opção &quot;Reprocessar jobs com falha&quot;
+                            que aparecerá quando houver falhas detectadas.
+                        </p>
                     </div>
                 </aside>
             </div>

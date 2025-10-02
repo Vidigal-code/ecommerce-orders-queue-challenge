@@ -4,6 +4,7 @@ import { Tier, Priority } from '../../../../domain/entities/order.entity';
 @Index(['id'], { unique: true })
 @Index(['priority'])
 @Index(['priority', 'status'])
+@Index(['runId', 'priority'])
 @Index(['createdAt'])
 @Entity('orders')
 export class OrderTypeOrmEntity {
@@ -33,4 +34,7 @@ export class OrderTypeOrmEntity {
 
   @Column()
   createdAt: Date;
+
+  @Column({ nullable: true })
+  runId?: string;
 }

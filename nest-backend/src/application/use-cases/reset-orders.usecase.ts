@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { LogsUseCase } from './logs.usecase';
 import * as orderRepository from '../../domain/repositories/order.repository';
 import type { IProcessRunRepository } from '../../domain/repositories/process-run.repository';
+import { TimingService } from '../../shared/timing/timing.service';
 
 @Injectable()
 export class ResetOrdersUseCase {
@@ -9,6 +10,7 @@ export class ResetOrdersUseCase {
     @Inject('IOrderRepository')
     private readonly orderRepo: orderRepository.IOrderRepository,
     private readonly logsUseCase: LogsUseCase,
+    private readonly timing: TimingService,
     @Inject('IProcessRunRepository')
     private readonly processRunRepo?: IProcessRunRepository,
   ) {}
@@ -26,6 +28,7 @@ export class ResetOrdersUseCase {
 
     await this.orderRepo.reset();
     this.logsUseCase.resetLogs();
+    this.timing.reset();
     if (options?.resetRuns && this.processRunRepo) {
       try {
         await this.processRunRepo.resetAll();

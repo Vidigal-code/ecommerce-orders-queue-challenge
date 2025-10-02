@@ -1,22 +1,27 @@
 'use client';
 import { useState } from 'react';
-import { api } from '@/lib/api';
 
-export function ResetSystemCard({ onDone }: { onDone?: () => void }) {
+type ResetResponse = { message?: string };
+
+export function ResetSystemCard({ onReset }: { onReset?: () => Promise<ResetResponse> }) {
     const [loading, setLoading] = useState(false);
-    const [res, setRes] = useState<any>(null);
+    const [res, setRes] = useState<ResetResponse | null>(null);
     const [err, setErr] = useState<string | null>(null);
 
     async function reset() {
         if (!confirm('This will clear orders, queue, logs and run history. Continue?')) return;
+        if (!onReset) return;
+
         setLoading(true);
         setErr(null);
         try {
-            const r = await api.reset();
-            setRes(r);
-            onDone?.();
-        } catch (e: any) {
-            setErr(e.message);
+            const resPayload = await onReset();
+            const message = resPayload && typeof resPayload === 'object' && 'message' in resPayload
+                ? (resPayload.message as string | undefined)
+                : undefined;
+            setRes({ message: message ?? 'System reset successfully' });
+        } catch (e) {
+            setErr((e as Error).message || 'Failed to reset system');
         } finally {
             setLoading(false);
         }

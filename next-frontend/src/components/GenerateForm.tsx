@@ -1,23 +1,29 @@
 'use client';
 import { useState } from 'react';
-import { api } from '@/lib/api';
 
-export function GenerateForm({ onSuccess }: { onSuccess?: () => void }) {
+type StartResult = { message?: string } | void;
+
+export function GenerateForm({ onStartGeneration }: { onStartGeneration?: (quantity: number, force?: boolean) => Promise<StartResult> }) {
     const [quantity, setQuantity] = useState(1000000);
     const [loading, setLoading] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const [force, setForce] = useState(false);
+
     async function submit() {
+        if (!onStartGeneration) return;
         setLoading(true);
         setError(null);
         setMsg(null);
         try {
-            const res = await api.generate(quantity);
-            setMsg(res.message);
-            onSuccess?.();
-        } catch (e: any) {
-            setError(e.message);
+            const res = await onStartGeneration(quantity, force);
+            const responseMessage = res && typeof res === 'object' && 'message' in res
+                ? (res.message as string | undefined)
+                : undefined;
+            setMsg(responseMessage ?? 'Generation request sent');
+        } catch (e) {
+            setError((e as Error).message || 'Failed to start generation');
         } finally {
             setLoading(false);
         }
@@ -34,6 +40,15 @@ export function GenerateForm({ onSuccess }: { onSuccess?: () => void }) {
                     className="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 w-48"
                     min={1}
                 />
+                <label className="flex items-center gap-2 text-xs text-neutral-400">
+                    <input
+                        type="checkbox"
+                        checked={force}
+                        onChange={e => setForce(e.target.checked)}
+                        className="accent-blue-600"
+                    />
+                    Force (restart if active)
+                </label>
                 <button
                     disabled={loading}
                     onClick={submit}

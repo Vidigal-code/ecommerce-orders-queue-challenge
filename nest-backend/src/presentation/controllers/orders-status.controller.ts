@@ -65,7 +65,6 @@ export class OrdersStatusController {
         normal: processLog.totalProcessedNormal ?? 0,
       },
       phase,
-      lastRunId: latest?.runId,
       throughput: {
         vip: processLog.throughput.vip ?? 0,
         normal: processLog.throughput.normal ?? 0,

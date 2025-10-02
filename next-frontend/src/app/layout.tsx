@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import Link from 'next/link'
+import { Metadata } from 'next'
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -48,10 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold tracking-tight">Orders Queue Dashboard</h1>
                 <nav className="flex gap-4 text-sm">
-                    <a href="/" className="hover:underline">Dashboard</a>
-                    <a href="/logs" className="hover:underline">Logs</a>
-                    <a href="/queue" className="hover:underline">Queue</a>
-                    <a href="/runs" className="hover:underline">Runs</a>
+                    <Link href="/" className="hover:underline">Dashboard</Link>
+                    <Link href="/logs" className="hover:underline">Logs</Link>
+                    <Link href="/queue" className="hover:underline">Queue</Link>
+                    <Link href="/runs" className="hover:underline">Runs</Link>
                 </nav>
             </header>
             {children}

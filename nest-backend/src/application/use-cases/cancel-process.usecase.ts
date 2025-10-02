@@ -8,6 +8,7 @@ import {
   CancelOptions,
   CancelResult,
 } from './interfaces/cancel-interface.process.usecase';
+import { ProcessStateRepository } from '../../infrastructure/state/process-state.repository';
 
 @Injectable()
 export class CancelProcessUseCase {
@@ -18,6 +19,7 @@ export class CancelProcessUseCase {
     @Inject('IOrderRepository')
     private readonly orderRepo: orderRepository.IOrderRepository,
     private readonly logsUseCase: LogsUseCase,
+    private readonly processStateRepo: ProcessStateRepository,
   ) {}
 
   async execute(options?: CancelOptions): Promise<CancelResult> {
@@ -27,6 +29,7 @@ export class CancelProcessUseCase {
       removePending = true,
       waitTimeoutMs = 10_000,
       pollIntervalMs = 500,
+      resetPhaseToIdle = true,
     } = options || {};
 
     if (!this.state.hasActiveGeneration() && !this.state.isAborting()) {
@@ -37,14 +40,35 @@ export class CancelProcessUseCase {
       };
     }
 
-    this.generationProcessor.abort();
+    this.state.setAborted(true);
+    this.state.setPhase('ABORTED');
+    this.state.setActiveGenerateJobId(null);
+    if (typeof (this.generationProcessor as any)?.abort === 'function') {
+      try {
+        (this.generationProcessor as any).abort();
+      } catch {}
+    }
+
+    await this.processStateRepo.save({
+      aborted: true,
+      phase: 'ABORTED',
+      activeGenerateJobId: null,
+    });
 
     let queuePaused = false;
     try {
-      await this.queueService.pauseQueue(true);
+      await this.queueService.pauseQueue();
       queuePaused = true;
     } catch {
       queuePaused = false;
+    }
+
+    const startWaitAbort = Date.now();
+    while (
+      this.state.hasActiveGeneration() &&
+      Date.now() - startWaitAbort < waitTimeoutMs
+    ) {
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
     }
 
     if (purge) {
@@ -66,15 +90,27 @@ export class CancelProcessUseCase {
       } catch {}
     }
 
-    const startWait = Date.now();
-    while (
-      this.state.hasActiveGeneration() &&
-      Date.now() - startWait < waitTimeoutMs
-    ) {
-      await new Promise((r) => setTimeout(r, pollIntervalMs));
-    }
-    const waitedForStopMs = Date.now() - startWait;
     const stillActive = this.state.hasActiveGeneration();
+    const waitedForStopMs = Date.now() - startWaitAbort;
+
+    if (!stillActive) {
+      try {
+        await this.logsUseCase.persistRun();
+      } catch {}
+    }
+
+    if (!stillActive && resetPhaseToIdle) {
+      this.state.resetAll();
+      await this.processStateRepo.save({
+        phase: 'IDLE',
+        aborted: false,
+        activeGenerateJobId: null,
+      });
+    }
+
+    try {
+      await this.queueService.resumeQueue();
+    } catch {}
 
     return {
       aborted: true,
@@ -85,8 +121,10 @@ export class CancelProcessUseCase {
       waitedForStopMs,
       stillActive,
       message: stillActive
-        ? 'Abort solicitado; tempo limite ao aguardar finalização (alguns jobs podem continuar brevemente).'
-        : 'Processo abortado e limpo com sucesso (fase = ABORTED).',
+        ? 'Abort solicitado; tempo limite ao aguardar finalização.'
+        : resetPhaseToIdle
+          ? 'Processo abortado, limpo e fase liberada (IDLE).'
+          : 'Processo abortado (fase ABORTED).',
     };
   }
 }

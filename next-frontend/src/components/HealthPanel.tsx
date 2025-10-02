@@ -6,7 +6,7 @@ import { PhaseBadge } from './PhaseBadge';
 
 export function HealthPanel() {
     const { data, mutate } = useSWR<HealthResponse>('health', api.health, {
-        refreshInterval: 7000
+        refreshInterval: 7000,
     });
 
     if (!data) {
@@ -17,7 +17,6 @@ export function HealthPanel() {
         );
     }
 
-    const c = data.queue || {};
     const processor = data.processor;
 
     return (
@@ -30,8 +29,12 @@ export function HealthPanel() {
                 <Stat label="Status" value={data.status} />
                 <Stat label="Processing" value={processor?.isProcessing ? 'yes' : 'no'} />
                 <Stat label="Aborting" value={processor?.aborting ? 'yes' : 'no'} />
-                <Stat label="Has Failed Jobs" value={data.checks?.hasFailedJobs ? 'yes' : 'no'} />
+                <Stat
+                    label="Has Failed Jobs"
+                    value={data.checks?.hasFailedJobs ? 'yes' : 'no'}
+                />
                 <Stat label="Is Stuck" value={data.checks?.isStuck ? 'yes' : 'no'} />
+                <Stat label="Aborted" value={data.checks?.aborted ? 'yes' : 'no'} />
             </div>
             <div className="text-right">
                 <button
@@ -45,7 +48,7 @@ export function HealthPanel() {
     );
 }
 
-function Stat({ label, value }: { label: string; value: any }) {
+function Stat({ label, value }: { label: string; value: string | number | boolean | null | undefined }) {
     return (
         <div className="p-2 bg-neutral-800 rounded flex flex-col">
             <span className="text-[10px] uppercase text-neutral-400">{label}</span>

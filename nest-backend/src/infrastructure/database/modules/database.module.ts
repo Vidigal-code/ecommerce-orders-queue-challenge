@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { ProcessRunTypeOrmEntity } from '../typeorm/entitys/process-run.typeorm.entity';
+
 import { OrderTypeOrmEntity } from '../typeorm/entitys/order.typeorm.entity';
+import { ProcessRunTypeOrmEntity } from '../typeorm/entitys/process-run.typeorm.entity';
+import { ProcessStateEntity } from '../../state/process-state.entity';
 
 @Module({
   imports: [
@@ -12,11 +14,19 @@ import { OrderTypeOrmEntity } from '../typeorm/entitys/order.typeorm.entity';
         type: 'mongodb',
         url: config.get<string>('MONGO_URI'),
         database: 'ecommerce',
-        entities: [OrderTypeOrmEntity, ProcessRunTypeOrmEntity],
+        entities: [
+          OrderTypeOrmEntity,
+          ProcessRunTypeOrmEntity,
+          ProcessStateEntity,
+        ],
         synchronize: false,
       }),
     }),
-    TypeOrmModule.forFeature([OrderTypeOrmEntity, ProcessRunTypeOrmEntity]),
+    TypeOrmModule.forFeature([
+      OrderTypeOrmEntity,
+      ProcessRunTypeOrmEntity,
+      ProcessStateEntity,
+    ]),
   ],
   exports: [TypeOrmModule],
 })

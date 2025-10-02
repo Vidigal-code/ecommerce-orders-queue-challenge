@@ -1,6 +1,27 @@
-# E-commerce Orders Queue Challenge (NestJS + Bull + MongoDB + Redis)
+# E-commerce Orders Queue Challenge (NestJS + BullMQ + MongoDB + Redis)
 
 > Updated version – focused on clarity, technical completeness, diagnostics and extensibility.
+
+---
+
+## Added: Unified /orders Endpoint (Challenge Contract)
+
+In addition to the legacy consolidated `/pedidos` endpoint, this implementation exposes a dedicated **`GET /orders`** route that fulfills the exact challenge requirement of a single endpoint returning generation + processing metrics in one payload.
+
+Key fields returned:
+- `generationTimeMs` – total generation duration
+- `enqueueVipTimeMs`, `enqueueNormalTimeMs` – enqueue durations per phase
+- `processing.vip|normal.{start,end,timeMs,count}` – window timing + processed counts per priority
+- `totalTimeMs` – composite logical total
+- `counts.{vip,normal,total}` – processed counts
+- `progress.{target,generated,processedTotal}` – end-to-end progress snapshot
+- `throughput.{vip,normal,overall}` – dynamic rates (orders/sec)
+- `eta.{estimatedMs,progressPercent}` – adaptive estimate until completion
+- `phase` – current orchestrator phase
+- `highRes` – high-resolution timing windows (monotonic internal marks)
+- `state` – in-memory state diagnostics (aborting flag, memory phase, active generation)
+
+Use `/orders` for external integrations or automated grading harnesses. `/pedidos` remains for backward-compatible status + localized naming.
 
 ---
 
@@ -63,7 +84,7 @@ Simulate a large-scale e-commerce ingestion + processing pipeline that:
 
 1. Mass generates 1,000,000+ orders.
 2. Classifies VIP (customer tier DIAMANTE) vs NORMAL priority.
-3. Uses a queue (Bull + Redis) ensuring all VIP jobs are processed before any NORMAL jobs.
+3. Uses a queue (BullMQ + Redis) ensuring all VIP jobs are processed before any NORMAL jobs.
 4. Exposes generation time, enqueue times, processing windows (start/end/duration) per priority, totals, and global metrics.
 5. Provides a single status endpoint.
 6. Supports reset for clean re-execution.
@@ -87,8 +108,8 @@ All original challenge requirements are met. The backend adds additional observa
 
 - **NestJS** layered structure (Domain / Application / Infrastructure / Presentation).
 - **MongoDB** for orders + execution runs.
-- **Redis** as Bull queue backend.
-- **Bull (v3)** for job orchestration.
+- **Redis** as BullMQ queue backend.
+- **BullMQ (v5)** for job orchestration.
 - **File-based logging** (optional via `BACKEND_LOGS=true`).
 - **In-memory live metrics** with persisted snapshots.
 
@@ -98,7 +119,7 @@ All original challenge requirements are met. The backend adds additional observa
 flowchart TD
     A[POST /pedidos/generate] --> B(GenerateOrdersUseCase)
     B --> C[Enqueue generateOrders job]
-    C -->|Bull| D[OrdersGenerationProcessor]
+    C -->|BullMQ| D[OrdersGenerationProcessor]
     D -->|bulk insert| M[(MongoDB)]
     D -->|enqueue VIP| Q[(Redis Queue)]
     Q --> W[OrdersWorkerProcessor]
@@ -137,7 +158,7 @@ flowchart TD
 | id | string (UUID) | Logical primary identifier |
 | cliente | string | Simulated customer name |
 | valor | number | Randomized price |
-| tier | enum | BRONZE / PRATA / OURO / DIAMANTE |
+| tier | enum | BRONZE / SILVER / GOLD / DIAMOND |
 | priority | enum | VIP / NORMAL (derived: DIAMANTE → VIP) |
 | observacoes | string | Random note → replaced post-processing |
 | status | string | 'pendente' → 'processado' |
@@ -192,8 +213,8 @@ Strict sequencing ensures true priority isolation: no NORMAL processing overlaps
 | Queue name | `orders-queue` |
 | Macro job | `generateOrders` (orchestration) |
 | Worker job | `processOrder` (per order) |
-| VIP priority | Bull job priority = 1 |
-| NORMAL priority | Bull job priority = 2 |
+| VIP priority | BullMQ job priority = 1 |
+| NORMAL priority | BullMQ job priority = 2 |
 | Worker concurrency | `ORDERS_QUEUE_CONCURRENCY` (default 25) |
 | Backpressure | Chunk + batch enqueue + drain polling |
 
@@ -265,6 +286,7 @@ Active jobs finish gracefully (consistency > abrupt termination).
 | GET | `/pedidos/queue/status` | Raw counts |
 | GET | `/pedidos/queue/jobs?types=waiting,active` | Job listing |
 | POST | `/pedidos/queue/close` | Close queue connection |
+| GET | `/orders` | Unified metrics (generation + processing) |
 
 ---
 
@@ -337,7 +359,7 @@ LOG_MEMORY=false
 
 ```bash
 # 1. Install dependencies
-npm install
+pnpm install
 
 # 2. Start infrastructure (example)
 docker run -d --name redis -p 6379:6379 redis:7
@@ -347,10 +369,15 @@ docker run -d --name mongo -p 27017:27017 mongo:6
 cp .env.example .env  # if example exists (or create manually)
 
 # 4. Start app
-npm run start
+pnpm start
 
 # 5. Kick off a large run
 curl -X POST "http://localhost:3000/pedidos/generate?quantity=1000000"
+
+# 6. Automated checks
+pnpm lint
+pnpm test
+pnpm test:e2e
 ```
 
 ---
@@ -404,6 +431,9 @@ curl "http://localhost:3000/pedidos/queue/status" | jq
 
 # List waiting & active jobs
 curl "http://localhost:3000/pedidos/queue/jobs?types=waiting,active" | jq
+
+# Unified metrics endpoint
+curl "http://localhost:3000/orders" | jq
 ```
 
 ---
@@ -432,7 +462,7 @@ Use to:
 | Layer | Current Strategy | Improvement Opportunities |
 |-------|------------------|---------------------------|
 | Generation | Chunked `insertMany` | Parallel chunk workers |
-| Processing | Bull concurrency | Dynamic auto-tuning |
+| Processing | BullMQ concurrency | Dynamic auto-tuning |
 | Updates | Per-document update | BulkWrite (batched) |
 | Metrics | On-demand DB counts | Cached counters / Redis |
 | Priority | Single queue w/ priority | Dual queues + orchestrator |

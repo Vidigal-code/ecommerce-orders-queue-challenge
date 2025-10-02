@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 
 export function QueueControls({ onAction }: { onAction?: () => void }) {
     const [loading, setLoading] = useState<string | null>(null);
-    async function action(fn: () => Promise<any>, tag: string) {
+    async function action(fn: () => Promise<unknown>, tag: string) {
         setLoading(tag);
         try { await fn(); onAction?.(); } catch {}
         setLoading(null);

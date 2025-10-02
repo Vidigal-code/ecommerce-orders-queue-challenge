@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MongoRepository } from 'typeorm';
 import { ProcessRunTypeOrmEntity } from '../entitys/process-run.typeorm.entity';
+import { OptionalUnlessRequiredId } from 'mongodb';
 import { ProcessRun } from '../../../../domain/entities/process-run.entity';
 import type { IProcessRunRepository } from '../../../../domain/repositories/process-run.repository';
 
@@ -13,11 +14,14 @@ export class ProcessRunTypeOrmRepository implements IProcessRunRepository {
   ) {}
 
   async save(run: ProcessRun): Promise<void> {
-    const toSave = {
+    const toSave: Partial<ProcessRunTypeOrmEntity> = {
       ...run,
       createdAt: run.createdAt ?? new Date(),
     };
-    await this.repo.insertOne(toSave as any);
+    const entity = this.repo.create(toSave);
+    await this.repo.insertOne(
+      entity as OptionalUnlessRequiredId<ProcessRunTypeOrmEntity>,
+    );
   }
 
   async findLatest(): Promise<ProcessRun | null> {
@@ -27,6 +31,14 @@ export class ProcessRunTypeOrmRepository implements IProcessRunRepository {
     });
     if (!docs || docs.length === 0) return null;
     return docs[0] as unknown as ProcessRun;
+  }
+
+  async findRecent(limit: number): Promise<ProcessRun[]> {
+    const docs = await this.repo.find({
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+    return docs as unknown as ProcessRun[];
   }
 
   async resetAll(): Promise<void> {

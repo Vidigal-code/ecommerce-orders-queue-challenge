@@ -1,9 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { Priority } from '../../domain/entities/order.entity';
 import * as orderRepository from '../../domain/repositories/order.repository';
 import type { IProcessRunRepository } from '../../domain/repositories/process-run.repository';
 import { v4 as uuidv4 } from 'uuid';
-import { ProcessLog } from './interfaces/logs.interface.usecase';
+import { ProcessLog } from './interfaces/logs-interface.usecase';
+import { EventsGateway } from '../../infrastructure/websocket/events.gateway';
 
 @Injectable()
 export class LogsUseCase {
@@ -21,14 +22,14 @@ export class LogsUseCase {
 
   private totalQuantityTarget = 0;
   private generatedCount = 0;
-  private lastVipCount = 0;
-  private lastNormalCount = 0;
   private processStartGlobal?: Date;
   private processEndGlobal?: Date;
 
   constructor(
     @Inject('IOrderRepository')
     private readonly orderRepo: orderRepository.IOrderRepository,
+    @Inject(forwardRef(() => EventsGateway))
+    private readonly eventsGateway: EventsGateway,
     @Inject('IProcessRunRepository')
     private readonly processRunRepo?: IProcessRunRepository,
   ) {}
@@ -40,6 +41,20 @@ export class LogsUseCase {
     this.generatedCount += by;
     if (!this.processStartGlobal) {
       this.processStartGlobal = new Date();
+    }
+
+    if (this.totalQuantityTarget > 0) {
+      const progress = Math.min(
+        (this.generatedCount / this.totalQuantityTarget) * 100,
+        100,
+      );
+      this.eventsGateway.emitProgress({
+        phase: 'GENERATING',
+        progress,
+        total: this.totalQuantityTarget,
+        current: this.generatedCount,
+        message: `Generated ${this.generatedCount}/${this.totalQuantityTarget} orders`,
+      });
     }
   }
 
@@ -53,21 +68,18 @@ export class LogsUseCase {
     this.enqueueNormalTimeMs = ms;
   }
   setPhase(p: string) {
-    if ((p === 'DONE' || p === 'ERROR') && !this.processEndGlobal) {
+    if (
+      (p === 'DONE' || p === 'ERROR' || p === 'ABORTED') &&
+      !this.processEndGlobal
+    ) {
       this.processEndGlobal = new Date();
     }
     this.phase = p;
-  }
-
-  setVIPProcessing(start: Date, end: Date, ms: number) {
-    this.startVIP = start;
-    this.endVIP = end;
-    this.processingTimeVIPMs = ms;
-  }
-  setNormalProcessing(start: Date, end: Date, ms: number) {
-    this.startNormal = start;
-    this.endNormal = end;
-    this.processingTimeNormalMs = ms;
+    this.eventsGateway.emitStatus({
+      phase: p,
+      timestamp: Date.now(),
+      message: `Phase changed to: ${p}`,
+    });
   }
 
   markStart(priority: Priority) {
@@ -81,7 +93,7 @@ export class LogsUseCase {
     }
   }
 
-  markEnd(priority: Priority) {
+  async markEnd(priority: Priority) {
     const now = new Date();
     if (priority === Priority.VIP) {
       if (this.startVIP) {
@@ -104,6 +116,21 @@ export class LogsUseCase {
         this.processingTimeNormalMs = 0;
       }
     }
+    try {
+      const counts = await this.getProcessedCounts();
+      this.eventsGateway.emitProgress({
+        phase:
+          priority === Priority.VIP
+            ? 'WAITING_VIP_DRAIN'
+            : 'WAITING_NORMAL_DRAIN',
+        progress: 100,
+        vipProcessed: counts.vip,
+        normalProcessed: counts.normal,
+        vipProcessingTime: this.processingTimeVIPMs,
+        normalProcessingTime: this.processingTimeNormalMs,
+        message: `Processed ${priority} order (${counts.vip + counts.normal} total)`,
+      });
+    } catch (error) {}
   }
 
   private computeTotalTime(): number {
@@ -116,10 +143,7 @@ export class LogsUseCase {
     );
   }
 
-  private async getProcessedCounts(): Promise<{
-    vip: number;
-    normal: number;
-  }> {
+  private async getProcessedCounts(): Promise<{ vip: number; normal: number }> {
     const repoAny = this.orderRepo as any;
     const hasProcessedCounter =
       typeof repoAny.countProcessedByPriority === 'function';
@@ -135,38 +159,25 @@ export class LogsUseCase {
     return { vip, normal };
   }
 
-  private computeThroughput(
-    vipCount: number,
-    normalCount: number,
-  ): {
-    vip: number;
-    normal: number;
-    overall: number;
-  } {
+  private computeThroughput(vipCount: number, normalCount: number) {
     const now = Date.now();
-    let vipMsWindow = 0;
-    if (this.startVIP) {
-      vipMsWindow = (this.endVIP?.getTime() || now) - this.startVIP.getTime();
-    }
-    let normalMsWindow = 0;
-    if (this.startNormal) {
-      normalMsWindow =
-        (this.endNormal?.getTime() || now) - this.startNormal.getTime();
-    }
-    let globalWindowMs = 0;
-    if (this.processStartGlobal) {
-      globalWindowMs =
-        (this.processEndGlobal?.getTime() || now) -
-        this.processStartGlobal.getTime();
-    }
+    const windowVip = this.startVIP
+      ? (this.endVIP?.getTime() || now) - this.startVIP.getTime()
+      : 0;
+    const windowNormal = this.startNormal
+      ? (this.endNormal?.getTime() || now) - this.startNormal.getTime()
+      : 0;
+    const globalWindow = this.processStartGlobal
+      ? (this.processEndGlobal?.getTime() || now) -
+        this.processStartGlobal.getTime()
+      : 0;
 
-    const safe = (ms: number, count: number) =>
-      ms > 0 ? count / (ms / 1000) : 0;
+    const rate = (ms: number, c: number) => (ms > 0 ? c / (ms / 1000) : 0);
 
     return {
-      vip: safe(vipMsWindow, vipCount),
-      normal: safe(normalMsWindow, normalCount),
-      overall: safe(globalWindowMs, vipCount + normalCount),
+      vip: rate(windowVip, vipCount),
+      normal: rate(windowNormal, normalCount),
+      overall: rate(globalWindow, vipCount + normalCount),
     };
   }
 
@@ -174,34 +185,28 @@ export class LogsUseCase {
     phase: string | undefined,
     vipCount: number,
     normalCount: number,
-  ): { estimatedMs: number | null; progressPercent: number } {
+  ) {
     if (!this.totalQuantityTarget || this.totalQuantityTarget <= 0) {
       return { estimatedMs: null, progressPercent: 0 };
     }
-
     const totalProcessed = vipCount + normalCount;
     const progressPercent = (totalProcessed / this.totalQuantityTarget) * 100;
-
-    if (phase === 'DONE' || phase === 'ERROR') {
+    if (['DONE', 'ERROR', 'ABORTED'].includes(phase || '')) {
       return { estimatedMs: 0, progressPercent };
     }
-
     const remaining = this.totalQuantityTarget - totalProcessed;
     if (remaining <= 0) {
       return { estimatedMs: 0, progressPercent: 100 };
     }
 
-    const now = Date.now();
     let elapsedMs = 0;
     if (this.processStartGlobal) {
-      elapsedMs = now - this.processStartGlobal.getTime();
+      elapsedMs = Date.now() - this.processStartGlobal.getTime();
     }
-    const throughputOverallSec =
+    const throughput =
       totalProcessed && elapsedMs > 0 ? totalProcessed / (elapsedMs / 1000) : 0;
-    if (throughputOverallSec <= 0) {
-      return { estimatedMs: null, progressPercent };
-    }
-    const etaSeconds = remaining / throughputOverallSec;
+    if (throughput <= 0) return { estimatedMs: null, progressPercent };
+    const etaSeconds = remaining / throughput;
     return { estimatedMs: etaSeconds * 1000, progressPercent };
   }
 
@@ -211,12 +216,17 @@ export class LogsUseCase {
       eta: { estimatedMs: number | null; progressPercent: number };
       target: number;
       generated: number;
+      wallClockMs: number;
     }
   > {
     const { vip, normal } = await this.getProcessedCounts();
-    const totalTimeMs = this.computeTotalTime();
     const throughput = this.computeThroughput(vip, normal);
     const eta = this.computeEta(this.phase, vip, normal);
+    const totalTimeMs = this.computeTotalTime();
+    const wallClockMs = this.processStartGlobal
+      ? (this.processEndGlobal?.getTime() || Date.now()) -
+        this.processStartGlobal.getTime()
+      : 0;
 
     return {
       generationTimeMs: this.generationTimeMs,
@@ -236,6 +246,7 @@ export class LogsUseCase {
       eta,
       target: this.totalQuantityTarget,
       generated: this.generatedCount,
+      wallClockMs,
     };
   }
 
@@ -252,8 +263,6 @@ export class LogsUseCase {
     this.endNormal = undefined;
     this.totalQuantityTarget = 0;
     this.generatedCount = 0;
-    this.lastVipCount = 0;
-    this.lastNormalCount = 0;
     this.processStartGlobal = undefined;
     this.processEndGlobal = undefined;
   }

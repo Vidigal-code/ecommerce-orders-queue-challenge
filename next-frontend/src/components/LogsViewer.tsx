@@ -28,14 +28,12 @@ export function LogsViewer({ lines = 300 }: { lines?: number }) {
                     </div>
                     <div className="p-3 bg-neutral-900 border border-neutral-700 rounded text-xs space-y-1">
                         <strong>Quick Stats:</strong>{' '}
-                        processed={data.quickStats.processedLines} | vip=
-                        {data.quickStats.vipProcessed} | normal={data.quickStats.normalProcessed}
+                        processed={data.quickStats.totalProcessed} | vip={data.quickStats.vipProcessed} | normal=
+                        {data.quickStats.normalProcessed}
                     </div>
                 </>
             )}
-            {!isLoading && !data && (
-                <div className="text-xs text-neutral-500">No data.</div>
-            )}
+            {!isLoading && !data && <div className="text-xs text-neutral-500">No data.</div>}
         </div>
     );
 }

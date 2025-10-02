@@ -4,6 +4,7 @@ export interface CancelOptions {
   removePending?: boolean;
   waitTimeoutMs?: number;
   pollIntervalMs?: number;
+  resetPhaseToIdle?: boolean;
 }
 
 export interface CancelResult {

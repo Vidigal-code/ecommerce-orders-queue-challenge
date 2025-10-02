@@ -31,6 +31,10 @@ export class OrdersProcessStateService {
     return !!this.activeGenerateJobId;
   }
 
+  getActiveGenerateJobId(): string | null {
+    return this.activeGenerateJobId;
+  }
+
   setEnqueueVipTime(ms: number) {
     this.enqueueVipTimeMs = ms;
   }

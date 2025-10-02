@@ -13,5 +13,6 @@ export interface IOrderRepository {
   iterateByPriority?(
     priority: Priority,
     batchSize?: number,
+    runid?: string,
   ): AsyncGenerator<Order[], void>;
 }

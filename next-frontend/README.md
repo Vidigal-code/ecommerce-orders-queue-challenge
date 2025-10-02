@@ -1,5 +1,5 @@
 # E-commerce Orders Queue Challenge
-Full Stack Solution (Backend: NestJS + Bull + MongoDB + Redis | Frontend: Next.js 15 + React 19 + Tailwind)
+Full Stack Solution (Backend: NestJS + BullMQ + MongoDB + Redis | Frontend: Next.js 15 + React 19 + Tailwind)
 
 ---
 
@@ -39,7 +39,7 @@ This project simulates a large-scale e-commerce order ingestion and prioritized 
 
 - Generates up to 1.5M orders (configurable).
 - Distinguishes VIP (DIAMOND tier) vs Normal orders and enforces strict priority: ALL VIP orders are processed before NORMAL orders enter the queue.
-- Uses a Redis-backed queue (Bull) for scalable parallel processing.
+- Uses a Redis-backed queue (BullMQ) for scalable parallel processing.
 - Persists orders and process execution metadata in MongoDB.
 - Provides a rich monitoring & control dashboard (Next.js) with real-time insights.
 - Supports cancellation, queue draining, system reset, and metrics persistence.
@@ -52,7 +52,7 @@ This project simulates a large-scale e-commerce order ingestion and prioritized 
 |----------|----------|
 | Generation | High-volume generation (chunks), random tiers, auto priority mapping, bulk persistence |
 | Priority Processing | Two-phase pipeline: VIP → drain → NORMAL |
-| Queue | Bull (Redis), priority levels, concurrency control |
+| Queue | BullMQ (Redis), priority levels, concurrency control |
 | Metrics | Generation time, enqueue times, per-priority processing windows, counts (processed only), total execution time |
 | Lifecycle Tracking | State machine (phases) with introspection via API |
 | Logging | File-based logs + retrieval endpoint with quick stats |
@@ -82,7 +82,7 @@ Client (Browser)  --->  | Next.js Dashboard (App Dir)|  (SSG + ISR + SWR)
                                        |
                                        v
                           +---------------------+
-                          |   Bull (Redis)      |
+                          |   BullMQ (Redis)      |
                           |  generateOrders     |
                           |  processOrder       |
                           +----------+----------+
@@ -102,7 +102,7 @@ Client (Browser)  --->  | Next.js Dashboard (App Dir)|  (SSG + ISR + SWR)
 
 | Layer | Tools |
 |-------|-------|
-| Backend | NestJS, TypeScript, Bull (Redis), TypeORM (MongoDB driver), UUID |
+| Backend | NestJS, TypeScript, BullMQ (Redis), TypeORM (MongoDB driver), UUID |
 | Queue | Redis |
 | Database | MongoDB |
 | Frontend | Next.js 15 (App Router), React 19, SWR, Tailwind CSS 4, Day.js |
@@ -124,7 +124,7 @@ ecommerce-orders-queue-challenge/
       shared/
     .env
     README (backend details)
-  next-ecommerce-orders-queue-challenge/
+  next-frontend/
     src/
       app/
       components/
@@ -268,7 +268,7 @@ Steps:
 
 ## Frontend (Next.js) Dashboard
 
-Folder: `next-ecommerce-orders-queue-challenge`
+Folder: `next-frontend`
 
 Features:
 - CSR + ISR hybrid (SEO-friendly)
@@ -330,7 +330,7 @@ pnpm start
 
 Frontend:
 ```bash
-cd next-ecommerce-orders-queue-challenge
+cd next-frontend
 cp env.example.txt .env.local
 pnpm install
 pnpm dev
@@ -446,7 +446,7 @@ pnpm install
 pnpm start
 
 # Terminal 3 (Frontend)
-cd next-ecommerce-orders-queue-challenge
+cd next-frontend
 pnpm install
 pnpm dev --port 3001
 

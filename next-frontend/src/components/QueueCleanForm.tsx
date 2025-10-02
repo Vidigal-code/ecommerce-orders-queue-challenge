@@ -7,7 +7,7 @@ const STATES = ['wait','active','delayed','completed','failed'];
 export function QueueCleanForm({ onDone }: { onDone?: () => void }) {
     const [state, setState] = useState('wait');
     const [loading, setLoading] = useState(false);
-    const [res, setRes] = useState<any>(null);
+    const [res, setRes] = useState<{ removed: number; state: string } | null>(null);
 
     async function submit() {
         setLoading(true);

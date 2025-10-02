@@ -25,7 +25,7 @@ This repository provides a ready-to-use Docker setup for MongoDB and Redis, desi
 2. **Run Docker Compose:**
 
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **MongoDB will be available at:**
@@ -84,13 +84,13 @@ redis://redis:6379
 To stop the containers:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 To remove data, also delete the `mongo_data` volume:
 
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ---

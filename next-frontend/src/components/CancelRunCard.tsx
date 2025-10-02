@@ -1,26 +1,25 @@
 'use client';
 import { useState } from 'react';
-import { api } from '@/lib/api';
+import type { CancelResult } from '@/lib/types';
 
-export function CancelRunCard({ onDone }: { onDone?: () => void }) {
+type CancelResponse = CancelResult | { message?: string };
+
+export function CancelRunCard({ onCancel }: { onCancel?: () => Promise<CancelResponse> }) {
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<CancelResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     async function cancel() {
         if (!confirm('Abort current run? This purges queue and removes pending orders.')) return;
+        if (!onCancel) return;
+
         setLoading(true);
         setError(null);
         try {
-            const res = await api.cancel({
-                purge: true,
-                removePending: true,
-                resetLogs: false
-            });
-            setResult(res);
-            onDone?.();
-        } catch (e: any) {
-            setError(e.message);
+            const res = await onCancel();
+            setResult(res ?? { success: true, message: 'Operation cancelled successfully' });
+        } catch (e) {
+            setError((e as Error).message || 'Failed to cancel operation');
         } finally {
             setLoading(false);
         }

@@ -1,8 +1,8 @@
 export enum Tier {
   BRONZE = 'BRONZE',
-  PRATA = 'PRATA',
-  OURO = 'OURO',
-  DIAMANTE = 'DIAMANTE',
+  SILVER = 'SILVER',
+  GOLD = 'GOLD',
+  DIAMOND = 'DIAMOND',
 }
 
 export enum Priority {
@@ -19,4 +19,5 @@ export class Order {
   priority?: Priority;
   status?: string;
   createdAt?: Date;
+  runId?: string;
 }

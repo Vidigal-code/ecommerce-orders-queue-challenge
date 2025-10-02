@@ -1,11 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    abortOnError: false,
-  });
+  const app = await NestFactory.create(AppModule, { abortOnError: false });
 
   app.enableCors();
   app.useGlobalPipes(
@@ -19,30 +17,32 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  function blue(text: string): string {
-    return `\x1b[34m${text}\x1b[0m`;
-  }
-
   const logger = new Logger('Bootstrap');
+  logger.log(`Servidor iniciado em http://localhost:${port}`);
+  logger.log(`Metrics: http://localhost:${port}/metrics (se habilitado)`);
+  logger.log(`Health:   http://localhost:${port}/health/ready`);
+  logger.log(`Author:   https://github.com/Vidigal-code`);
+
   const shutdown = async (signal: string) => {
     try {
-      logger.log(`Received ${signal}. Closing application...`);
+      logger.warn(`Recebido ${signal}. Encerrando...`);
       await app.close();
-      logger.log('Application closed gracefully.');
+      logger.log('Aplicação encerrada.');
       process.exit(0);
     } catch (err) {
-      logger.error('Error during shutdown', err as any);
+      logger.error('Erro no encerramento', err as any);
       process.exit(1);
     }
   };
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-  console.log(
-    blue(
-      `Server running on http://localhost:${port}  Created by https://github.com/Vidigal-code`,
-    ),
-  );
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
 }
-
-bootstrap();
+bootstrap().catch((err) => {
+  const logger = new Logger('Bootstrap');
+  logger.error('Erro ao iniciar aplicação', err as Error);
+  process.exit(1);
+});

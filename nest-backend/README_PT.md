@@ -1,4 +1,4 @@
-# Desafio: Fila de Pedidos de E-commerce (NestJS + Bull + MongoDB + Redis)
+# Desafio: Fila de Pedidos de E-commerce (NestJS + BullMQ + MongoDB + Redis)
 
 > Versão em Português – focada em clareza, completude técnica, diagnósticos e extensibilidade.
 
@@ -63,7 +63,7 @@ Simular um pipeline de e-commerce em larga escala que:
 
 1. Gera 1.000.000+ pedidos.
 2. Classifica pedidos VIP (tier DIAMANTE) vs NORMAL.
-3. Usa fila (Bull + Redis) garantindo que todos os VIP sejam processados antes dos NORMAL.
+3. Usa fila (BullMQ + Redis) garantindo que todos os VIP sejam processados antes dos NORMAL.
 4. Exibe tempos de geração, enfileiramento, processamento (janela inicial/final e duração), contagens e tempo global.
 5. Fornece um endpoint de status central.
 6. Suporta reset completo.
@@ -88,7 +88,7 @@ Todos os requisitos do enunciado foram atendidos. Recursos adicionais adicionado
 - **NestJS** com camadas: Domain / Application / Infrastructure / Presentation.
 - **MongoDB**: pedidos e execuções.
 - **Redis**: backend da fila.
-- **Bull (v3)**: orquestração de jobs.
+- **BullMQ (v5)**: orquestração de jobs.
 - **Logs em arquivo** (opcional via `BACKEND_LOGS=true`).
 - **Métricas em memória** com snapshots persistidos.
 
@@ -98,7 +98,7 @@ Todos os requisitos do enunciado foram atendidos. Recursos adicionais adicionado
 flowchart TD
     A[POST /pedidos/generate] --> B(GenerateOrdersUseCase)
     B --> C[Enfileira job generateOrders]
-    C -->|Bull| D[OrdersGenerationProcessor]
+    C -->|BullMQ| D[OrdersGenerationProcessor]
     D -->|bulk insert| M[(MongoDB)]
     D -->|enqueue VIP| Q[(Redis Queue)]
     Q --> W[OrdersWorkerProcessor]

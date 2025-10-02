@@ -6,6 +6,7 @@ export type Phase =
     | 'ENQUEUE_NORMAL'
     | 'WAITING_NORMAL_DRAIN'
     | 'DONE'
+    | 'ABORTED'
     | 'ERROR';
 
 export interface OrdersStatusDto {
@@ -72,7 +73,7 @@ export interface LogsResponse {
     queueStatus: QueueStatus;
     logs: LogFileMessages;
     quickStats: {
-        processedLines: number;
+        totalProcessed: number;
         vipProcessed: number;
         normalProcessed: number;
     };
@@ -90,10 +91,11 @@ export interface HealthChecks {
     queueResponsive: boolean;
     hasFailedJobs: boolean;
     isStuck: boolean;
+    aborted?: boolean;
 }
 
 export interface HealthResponseOk {
-    status: 'healthy' | 'degraded' | 'paused';
+    status: 'healthy' | 'degraded' | 'paused' | 'aborted' | 'error';
     timestamp: string;
     queue: {
         connected: true;
@@ -122,6 +124,13 @@ export interface HealthResponseError {
 
 export type HealthResponse = HealthResponseOk | HealthResponseError;
 
+export type JobPriority = 'VIP' | 'NORMAL';
+
+export interface QueueJobData {
+    priority?: JobPriority;
+    [key: string]: unknown;
+}
+
 export interface QueueJob {
     id: string | number;
     name: string;
@@ -130,7 +139,7 @@ export interface QueueJob {
     timestamp?: number;
     processedOn?: number | null;
     finishedOn?: number | null;
-    data?: unknown;
+    data?: QueueJobData;
 }
 
 export interface QueueJobsEnvelope {
@@ -149,4 +158,30 @@ export function normalizeJobsPayload(
         return (payload as QueueJobsEnvelope).jobs;
     }
     return [];
+}
+
+export interface ProcessRunSummary {
+    runId?: string;
+    createdAt?: string;
+    generationTimeMs?: number;
+    processingTimeVIPMs?: number;
+    processingTimeNormalMs?: number;
+    totalProcessedVIP?: number;
+    totalProcessedNormal?: number;
+    totalTimeMs?: number;
+    enqueueVipTimeMs?: number;
+    enqueueNormalTimeMs?: number;
+}
+
+export interface RunsResponse {
+    limit: number;
+    count: number;
+    runs: ProcessRunSummary[];
+}
+
+export interface CancelResult {
+    success: boolean;
+    message?: string;
+    error?: string;
+    purged?: boolean;
 }

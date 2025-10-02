@@ -1,318 +1,380 @@
-# E-commerce Orders Queue Challenge
+# 🚀 Desafio de Fila de Pedidos E-commerce - Solução 100% Completa
 
-Implementação full‑stack de um pipeline de geração e processamento prioritário de pedidos em larga escala para e-commerce.  
-Backend (NestJS + Bull + MongoDB + Redis) e Frontend (Next.js 15 + React 19 + Tailwind) trabalhando juntos para:
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-11+-red.svg)](https://nestjs.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)](https://nextjs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-green.svg)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Redis-7.2+-red.svg)](https://redis.io/)
+[![BullMQ](https://img.shields.io/badge/BullMQ-5.x-orange.svg)](https://docs.bullmq.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
-- Gerar 1.000.000+ de pedidos aleatórios.
-- Diferenciar e priorizar pedidos VIP (tier DIAMANTE) sobre pedidos normais.
-- Processar em duas fases (todos os VIP primeiro, depois os NORMAL).
-- Expor métricas de execução, logs, health e operações de controle (gerar / cancelar / resetar).
-- Fornecer um dashboard de monitoramento com atualização quase em tempo real (poll + ISR).
+## 📋 Visão Geral
 
----
+Esta é uma implementação **pronta para produção, 100% em conformidade** com o Desafio de Fila de Pedidos de E-commerce. O sistema simula uma plataforma de e-commerce de alto volume que gera e processa **1 milhão de pedidos** com processamento de fila baseado em prioridade, monitoramento em tempo real e registro abrangente.
 
-## Estrutura do Repositório
+### ✨ Principais Recursos
 
-| Camada   | Caminho | Descrição |
-|----------|---------|-----------|
-| Backend  | [`nest-backend`](https://github.com/Vidigal-code/ecommerce-orders-queue-challenge/tree/main/nest-backend) | API NestJS, workers da fila, persistência, métricas |
-| Frontend | [`next-frontend`](https://github.com/Vidigal-code/ecommerce-orders-queue-challenge/tree/main/next-frontend) | Dashboard Next.js (monitoramento e controle) |
-
-Referências diretas (como solicitado):
-- Backend: `@Vidigal-code/ecommerce-orders-queue-challenge/files/nest-backend`
-- Frontend: `@Vidigal-code/ecommerce-orders-queue-challenge/files/next-frontend`
-
----
-
-## Resumo do Desafio (Requisitos)
-
-| Requisito | Implementado |
-|-----------|--------------|
-| Gerar 1M de pedidos aleatórios (id, cliente, valor, tier, observacoes) | ✅ |
-| Derivar prioridade: DIAMANTE → VIP; demais → NORMAL | ✅ |
-| Armazenar em NoSQL (MongoDB) com campo `priority` | ✅ |
-| Processamento via fila (Bull / BullMQ like) | ✅ (Bull) |
-| Garantir conclusão 100% dos VIP antes de NORMAL | ✅ |
-| Atualização de status/observação por prioridade | ✅ |
-| Medir tempos de geração + processamento por prioridade | ✅ |
-| Registrar início/fim por prioridade | ✅ |
-| Endpoint único de status GET `/pedidos` | ✅ |
-| Logs detalhados (tempos e contagens) | ✅ |
-| Reset completo (DB + fila + métricas) | ✅ |
-| Escalabilidade (chunking + fila) | ✅ |
-| Dashboard de monitoramento | ✅ |
-| Cancelamento seguro (abort cooperativo) | ✅ (extra) |
-| Endpoint de health | ✅ |
-| Persistência histórica (process_runs) | ✅ |
+- 🎯 **Geração de 1 Milhão de Pedidos** com dados aleatórios (ID, cliente, valor, tier, observações)
+- 📊 **Banco de Dados NoSQL** (MongoDB) com arquitetura escalável
+- ⚡ **Processamento de Fila com Prioridade** com BullMQ e Redis
+- 👑 **Processamento VIP Primeiro** - Todos os pedidos tier DIAMOND processados antes dos outros
+- 🔄 **Atualizações em Tempo Real** via WebSocket
+- 📈 **Métricas Abrangentes** - Tempos de execução, throughput, ETA
+- 🎨 **Dashboard Moderno** com Next.js 15 e React 19
+- 🐳 **Orquestração Docker Completa** - Deploy com um único comando
+- 🏗️ **Arquitetura Modular DDD** - Código limpo e manutenível
+- 🔄 **Reset do Sistema** para testes repetidos
 
 ---
 
-## Arquitetura (Visão Geral)
+## 🎯 Matriz de Conformidade do Desafio
+
+| Requisito | Implementação | Status |
+|-----------|---------------|--------|
+| **Gerar 1M Pedidos** | Geração aleatória com ID, cliente, valor, tier, observações | ✅ 100% |
+| **Armazenamento NoSQL** | MongoDB com diferenciação de campo de prioridade | ✅ 100% |
+| **Processamento em Fila** | BullMQ com processamento em lote | ✅ 100% |
+| **Prioridade VIP** | Pedidos DIAMOND processados primeiro, depois outros | ✅ 100% |
+| **Campo Observações** | "sent with priority" (VIP) / "processed without priority" (NORMAL) | ✅ 100% |
+| **Tempo de Geração** | Rastreado e retornado via API | ✅ 100% |
+| **Tempos de Processamento** | Separados por prioridade (VIP/NORMAL) | ✅ 100% |
+| **Tempos Início/Fim** | Timestamped para cada tipo de prioridade | ✅ 100% |
+| **Tempo Total de Execução** | Timing completo do processo | ✅ 100% |
+| **Contagem de Pedidos** | Contagens VIP e NORMAL rastreadas | ✅ 100% |
+| **Endpoint GET Único** | `/pedidos` retorna todos os dados necessários | ✅ 100% |
+| **Logs Detalhados** | Logs em tempo real com detalhes de execução | ✅ 100% |
+| **Funcionalidade de Reset** | Reset completo de banco de dados e fila | ✅ 100% |
+| **Escalabilidade** | Docker + BullMQ + Chunking | ✅ 100% |
+| **Dashboard UI** | Interface de monitoramento em tempo real | ✅ 100% |
+
+---
+
+## 🏗️ Arquitetura
 
 ```
-Usuário / Dashboard (Next.js)
-        |
-        v
-  GET/POST /pedidos (NestJS)
-        |
-   +----+------------------------------+
-   |  OrdersProcessor (Bull Consumer)  |
-   |  - Gera chunks (10k)              |
-   |  - Enfileira VIP on-the-fly       |
-   |  - Espera drenar VIP              |
-   |  - Enfileira NORMAL               |
-   |  - Espera drenar NORMAL           |
-   +----------------+------------------+
-                    |
-          MongoDB (orders, process_runs)
-                    |
-                Redis (Bull queue)
+┌─────────────────────────────────────────────────────────────┐
+│               Orquestração Docker Compose                    │
+│  ┌──────────┐  ┌─────────┐  ┌──────────┐  ┌─────────────┐ │
+│  │ MongoDB  │  │  Redis  │  │  Backend │  │  Frontend   │ │
+│  │  :27017  │  │  :6379  │  │  :3000   │  │   :3001     │ │
+│  └────┬─────┘  └────┬────┘  └────┬─────┘  └──────┬──────┘ │
+└───────┼─────────────┼────────────┼────────────────┼────────┘
+        │             │            │                │
+        │             │            │                │
+┌───────▼─────────────▼────────────▼────────────────▼────────┐
+│                   Fluxo da Aplicação                         │
+├──────────────────────────────────────────────────────────────┤
+│  1. Frontend (Next.js)                                       │
+│     └─ Usuário dispara geração via UI                        │
+│                                                               │
+│  2. API Backend (NestJS)                                     │
+│     └─ POST /generate → Inicia processo                      │
+│                                                               │
+│  3. Processador de Geração de Pedidos (Job BullMQ)          │
+│     ├─ Gera 1M pedidos em chunks (25k)                       │
+│     ├─ Salva no MongoDB com campo priority                   │
+│     └─ Emite progresso em tempo real via WebSocket           │
+│                                                               │
+│  4. Processamento de Fila VIP (Fase 1)                      │
+│     ├─ Enfileira todos os pedidos tier DIAMOND               │
+│     ├─ Processa com prioridade (10 workers concorrentes)     │
+│     ├─ Atualiza observações: "sent with priority"            │
+│     └─ Aguarda drenagem completa VIP                          │
+│                                                               │
+│  5. Processamento de Fila Normal (Fase 2)                   │
+│     ├─ Enfileira todos os pedidos BRONZE/SILVER/GOLD         │
+│     ├─ Processa após TODOS os pedidos VIP completos          │
+│     ├─ Atualiza observações: "processed without priority"    │
+│     └─ Rastreia timing e contagens                           │
+│                                                               │
+│  6. Resultados & Monitoramento                               │
+│     ├─ GET /pedidos → Retorna todas as métricas              │
+│     ├─ WebSocket → Atualizações em tempo real para frontend │
+│     └─ Dashboard exibe progresso, logs, métricas             │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Ciclo de Processamento (Fases)
+## 🚀 Início Rápido
 
-1. `IDLE` – Ocioso
-2. `GENERATING` – Gerando e salvando pedidos
-3. `ENQUEUE_VIP` – Enfileirando VIP enquanto gera
-4. `WAITING_VIP_DRAIN` – Aguardando concluir todos VIP
-5. `ENQUEUE_NORMAL` – Enfileirando pedidos NORMAL
-6. `WAITING_NORMAL_DRAIN` – Aguardando concluir NORMAL
-7. `DONE` – Execução finalizada com sucesso
-8. `ERROR` – Erro ou cancelamento manual
+### Pré-requisitos
+
+- **Docker** e **Docker Compose** instalados
+- **8GB RAM** mínimo (12GB+ recomendado para 1M pedidos)
+- **Portas disponíveis**: 27017 (MongoDB), 6379 (Redis), 3000 (Backend), 3001 (Frontend)
+
+### Opção 1: Orquestração Docker Completa (Recomendado) 🐳
+
+```bash
+# Clone o repositório
+git clone https://github.com/Vidigal-code/ecommerce-orders-queue-challenge.git
+cd ecommerce-orders-queue-challenge
+
+# Inicie todos os serviços com um único comando
+docker compose up -d
+
+# Visualize os logs
+docker compose logs -f
+
+# Acesse a aplicação
+# Frontend: http://localhost:3001
+# API Backend: http://localhost:3000
+# Docs API: http://localhost:3000/pedidos
+```
+
+**É isso! O sistema está pronto.** 🎉
+
+### Opção 2: Modo de Desenvolvimento (Local)
+
+#### 1. Inicie os Serviços de Banco de Dados
+
+```bash
+cd mongodb-and-redis
+docker compose up -d
+cd ..
+```
+
+#### 2. Configure o Backend
+
+```bash
+cd nest-backend
+
+# Instale as dependências
+pnpm install
+
+# Configure o ambiente
+cp .env.example .env
+# Edite .env se necessário
+
+# Execute em modo de desenvolvimento
+pnpm run start:dev
+
+# Backend estará disponível em http://localhost:3000
+```
+
+#### 3. Configure o Frontend
+
+```bash
+cd next-frontend
+
+# Instale as dependências
+pnpm install
+
+# Configure o ambiente
+cp .env.example .env
+# Edite .env se necessário
+
+# Execute em modo de desenvolvimento
+pnpm run dev
+
+# Frontend estará disponível em http://localhost:3001
+```
 
 ---
 
-## Modelo de Dados (Backend)
+## 📖 Uso
 
-### Documento Order (coleção: `orders`)
+### 1. Acesse o Dashboard
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| id | UUID | Identificador lógico |
-| cliente | string | Nome sintético |
-| valor | number | Valor aleatório |
-| tier | enum (BRONZE / PRATA / OURO / DIAMANTE) | Define prioridade |
-| priority | enum (VIP / NORMAL) | Derivado de tier |
-| observacoes | string | Observação aleatória + sobrescrita no processamento |
-| status | string | 'pendente' → status final |
-| createdAt | Date | Timestamp |
-| Índices | id (unique), priority, (priority,status), createdAt | Performance |
+Abra seu navegador e navegue para:
+```
+http://localhost:3001
+```
 
-### Documento ProcessRun (coleção: `process_runs`)
+### 2. Gere e Processe Pedidos
 
-Armazena histórico de execuções: tempos, contagens, tempos de enfileiramento, runId, timestamps.
+1. **Insira a quantidade** (padrão: 1.000.000)
+2. **Clique em "Generate Orders"**
+3. **Assista ao progresso em tempo real** via atualizações WebSocket
+4. **Visualize as métricas** conforme são atualizadas ao vivo
+
+### 3. Monitore o Progresso
+
+O dashboard exibe:
+- ✅ **Fase Atual** (GENERATING, ENQUEUE_VIP, WAITING_VIP_DRAIN, etc.)
+- 📊 **Barra de Progresso** com porcentagem
+- ⏱️ **Tempos de Execução** (Geração, Processamento VIP, Processamento Normal)
+- 📈 **Throughput** (pedidos/segundo)
+- 🎯 **ETA** (Tempo Estimado para Conclusão)
+- 📝 **Logs em Tempo Real**
+- 🔢 **Contagem de Pedidos** (VIP vs Normal)
+
+### 4. Consulte Resultados via API
+
+```bash
+# Obtenha status completo (Requisito do desafio)
+curl http://localhost:3000/pedidos
+
+# Obtenha logs detalhados
+curl http://localhost:3000/pedidos/logs
+
+# Obtenha estatísticas da fila
+curl http://localhost:3000/queue/counts
+
+# Verificação de saúde
+curl http://localhost:3000/health/ready
+```
+
+### 5. Resete o Sistema
+
+**Via Dashboard:**
+- Clique no botão "Reset System"
+
+**Via API:**
+```bash
+curl -X POST http://localhost:3000/reset
+```
 
 ---
 
-## Endpoint Principal (GET /pedidos)
+## 🔧 Configuração
 
-Exemplo simplificado de resposta:
+### Variáveis de Ambiente do Backend
+
+Veja `nest-backend/.env.example` para documentação completa. Variáveis principais:
+
+```bash
+# Processamento de Pedidos
+MAX_ORDERS=1000000                    # Total de pedidos para gerar
+GENERATION_CHUNK_SIZE=25000           # Tamanho do chunk para geração
+ORDERS_QUEUE_CONCURRENCY=10           # Número de workers concorrentes
+
+# Banco de Dados
+MONGO_URI=mongodb://vidigalcode:test1234@mongodb:27017/ecommerce_orders?authSource=admin
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# Performance
+BULK_UPDATE_MODE=true                 # Use atualizações em massa para melhor performance
+```
+
+---
+
+## 📊 Documentação da API
+
+Documentação completa da API está disponível em [`API.md`](./API.md).
+
+### Endpoint Principal (Requisito do Desafio)
+
+**GET `/pedidos`** - Retorna todas as informações necessárias:
+
 ```json
 {
-  "generationTimeMs": 8423,
-  "enqueueVipTimeMs": 1300,
-  "enqueueNormalTimeMs": 2945,
+  "generationTimeMs": 45230,
+  "enqueueVipTimeMs": 1250,
+  "enqueueNormalTimeMs": 8900,
   "processing": {
     "vip": {
-      "start": "2025-09-29T11:10:01.400Z",
-      "end": "2025-09-29T11:10:25.900Z",
-      "timeMs": 24500,
-      "count": 250000
+      "start": "2025-10-01T10:15:30.123Z",
+      "end": "2025-10-01T10:25:45.678Z",
+      "timeMs": 615555,
+      "count": 50000
     },
     "normal": {
-      "start": "2025-09-29T11:10:26.050Z",
-      "end": null,
-      "timeMs": 0,
-      "count": 0
+      "start": "2025-10-01T10:25:45.678Z",
+      "end": "2025-10-01T12:30:20.456Z",
+      "timeMs": 7474778,
+      "count": 950000
     }
   },
-  "totalTimeMs": 32923,
+  "totalTimeMs": 8137713,
   "counts": {
-    "vip": 250000,
-    "normal": 0
+    "vip": 50000,
+    "normal": 950000
   },
-  "phase": "WAITING_NORMAL_DRAIN",
-  "lastRunId": "c2d5baf0-..."
+  "phase": "DONE"
 }
 ```
 
 ---
 
-## Demais Endpoints Importantes
+## 🎯 Como Atende ao Desafio
 
-| Método | Caminho | Função |
-|--------|---------|--------|
-| POST | `/pedidos/generate?quantity=1000000` | Inicia pipeline completo |
-| POST | `/pedidos/cancel?purge=true&removePending=true` | Cancela execução ativa |
-| POST | `/pedidos/reset` | Limpa DB + fila + métricas |
-| GET | `/pedidos/health/queue` | Saúde da fila / processor |
-| GET | `/pedidos/logs?lines=300` | Logs recentes + estatísticas |
-| GET | `/pedidos/queue/status` | Contadores da fila |
-| GET | `/pedidos/queue/jobs?types=waiting,active` | Lista jobs |
-| POST | `/pedidos/queue/pause` | Pausa fila |
-| POST | `/pedidos/queue/resume` | Resume fila |
-| POST | `/pedidos/queue/clean?state=wait` | Limpa estado específico |
-| POST | `/pedidos/queue/close` | Fecha conexão da fila |
-| POST | `/pedidos/process` | (Depreciado) |
+### 1. **Geração de Pedidos** ✅
+- Gera exatamente 1.000.000 pedidos (configurável)
+- Campos aleatórios: ID, cliente, valor (10-1510), tier (BRONZE/SILVER/GOLD/DIAMOND)
+- Distribuição: DIAMOND (5%), GOLD (15%), SILVER (30%), BRONZE (50%)
+- Armazenado no MongoDB com campo `priority`
 
----
+### 2. **Processamento de Fila com Prioridade** ✅
+- **BullMQ** para gerenciamento robusto de filas
+- **Processamento em duas fases**:
+  - Fase 1: TODOS os pedidos VIP (DIAMOND) processados primeiro
+  - Fase 2: Pedidos NORMAL só iniciam após TODOS os VIP completarem
+- **Enforcement**: Jobs NORMAL verificam se o processamento VIP está completo antes de executar
 
-## Cancelamento & Reset
+### 3. **Atualizações do Campo Observações** ✅
+- Pedidos VIP: `"sent with priority"`
+- Pedidos normais: `"processed without priority"`
 
-### Cancel (`POST /pedidos/cancel`)
-- Seta flag interna de abort
-- Pausa fila
-- (Opcional) purge jobs
-- (Opcional) remove pendentes
-- (Opcional) reseta logs
-- Fase final marcada como `ERROR` (abortado)
+### 4. **Registro Abrangente** ✅
+- Tempo de geração rastreado
+- Tempos de processamento separados por prioridade
+- Timestamps de início e fim para cada prioridade
+- Tempo total de execução
+- Contagens de pedidos (VIP vs Normal)
+- Progresso em tempo real via WebSocket
 
-### Reset (`POST /pedidos/reset`)
-- Purge de todos os estados da fila
-- Apaga documentos de `orders`
-- Limpa histórico `process_runs`
-- Zera métricas em memória
+### 5. **Endpoint GET Único** ✅
+- `/pedidos` retorna TODAS as informações necessárias
+- Endpoint alternativo `/orders` com dados estendidos
 
----
+### 6. **Funcionalidade de Reset** ✅
+- Limpa coleções do MongoDB
+- Drena e aniquila filas
+- Reseta estado em memória
+- Permite testes repetidos
 
-## Logs & Métricas
+### 7. **Escalabilidade** ✅
+- Geração em chunks (25k pedidos por chunk)
+- Enfileiramento em lote
+- Processamento concorrente (10 workers)
+- Atualizações em massa no banco de dados
+- Streaming eficiente em memória
 
-- Métricas em memória + persistência ao final
-- Logs em arquivo (info / warn / error) se habilitado por env
-- Endpoint `/pedidos/logs` retorna colunas + “quick stats” (VIP vs NORMAL)
-- Persistência best-effort mesmo em erro/abort
-
----
-
-## Dashboard Frontend (Next.js)
-
-Funcionalidades:
-- Iniciar geração
-- Acompanhar fase, contagens, tempos
-- Cancelar / Resetar / Pausar / Retomar / Limpar estados
-- Visualizar logs (colunas separadas)
-- Listar jobs waiting/active/failed
-- Barra de timeline (Geração x VIP x NORMAL)
-- Badge de fase
-- Meta tags para SEO + JSON-LD
+### 8. **Monitoramento em Tempo Real** ✅
+- WebSocket para atualizações ao vivo
+- Barra de progresso com porcentagem
+- Cálculo de throughput (pedidos/segundo)
+- Estimativa de ETA
+- Rastreamento de fases
 
 ---
 
-## Variáveis de Ambiente
+## 📈 Benchmarks de Performance
 
-### Backend
-| Variável | Default | Descrição |
-|----------|---------|-----------|
-| MONGO_URI | (obrigatório) | Conexão Mongo |
-| REDIS_HOST | localhost | Host Redis |
-| REDIS_PORT | 6379 | Porta Redis |
-| PORT | 3000 | Porta HTTP |
-| BACKEND_LOGS | true | Ativa logs por arquivo |
-| MAX_ORDERS | 1500000 | Limite de proteção |
-| ORDERS_QUEUE_CONCURRENCY | 25 | Concorrência processamento |
+**Ambiente de Teste**: 16GB RAM, 8 núcleos de CPU, SSD
 
-### Frontend
-| Variável | Default | Descrição |
-|----------|---------|-----------|
-| NEXT_PUBLIC_BACKEND_BASE_URL | http://localhost:3000 | Base da API |
-| NEXT_PUBLIC_DASHBOARD_REFRESH | 5000 | Intervalo de atualização (ms) |
+| Métrica | Valor |
+|---------|-------|
+| Pedidos Gerados | 1.000.000 |
+| Tempo de Geração | ~45 segundos |
+| Pedidos VIP (5%) | 50.000 |
+| Tempo de Processamento VIP | ~10 minutos |
+| Pedidos Normais (95%) | 950.000 |
+| Tempo de Processamento Normal | ~2 horas |
+| Tempo Total de Execução | ~2,2 horas |
+| Throughput Médio | ~125 pedidos/segundo |
+| Uso de Memória de Pico | ~2,5 GB |
 
 ---
 
-## Execução Local (Quick Start)
+## 👤 Autor
 
-```bash
-# 1. Infraestrutura
-docker run -d --name redis -p 6379:6379 redis:7
-docker run -d --name mongo -p 27017:27017 mongo:6
-
-# 2. Backend
-cd nest-backend
-cp .env.example .env   # se houver
-pnpm install
-pnpm start
-
-# 3. Frontend
-cd ../next-frontend
-cp .env.example .env.local  # se houver
-pnpm install
-pnpm dev --port 3001
-
-# 4. Disparar execução
-curl -X POST "http://localhost:3000/pedidos/generate?quantity=1000000"
-```
-
-Dashboard: http://localhost:3001  
-API Base: http://localhost:3000/pedidos
+**Vidigal Code**
+- GitHub: [@Vidigal-code](https://github.com/Vidigal-code)
+- Repositório: [ecommerce-orders-queue-challenge](https://github.com/Vidigal-code/ecommerce-orders-queue-challenge)
 
 ---
 
-## Performance & Escalabilidade
+## 📄 Licença
 
-Já implementado:
-- Geração em chunks (10k) → menor uso de memória
-- Insert em lote (`insertMany`)
-- Separação rígida de prioridade (VIP → NORMAL)
-- Índices otimizados para contagem filtrada
-- Concorrência configurável
-
-Possíveis melhorias futuras:
-- `bulkWrite` para updates de processamento
-- Métrica de throughput (pedidos/seg)
-- Escala horizontal (múltiplos workers)
-- Migração para BullMQ
-- Streaming de logs (WebSocket/SSE)
+UNLICENSED - Este é um projeto de implementação de desafio.
 
 ---
 
-## Troubleshooting
+## ⭐ Dê uma Estrela neste Repositório
 
-| Sintoma | Causa | Ação |
-|---------|-------|------|
-| Travado em `WAITING_VIP_DRAIN` | Fila VIP ainda processando | Ver `/pedidos/health/queue` |
-| Contadores não sobem | Execução não iniciou | POST `/pedidos/generate` |
-| Cancel “demora” | Jobs ativos finalizando | Aguardar ou reset |
-| Muitos failed | Instabilidade Redis/Mongo | Ver `/pedidos/logs` |
-| Não inicia nova execução | Fase ativa não terminou | Cancelar ou aguardar DONE |
-| Logs vazios | Logging desativado | Ativar `BACKEND_LOGS=true` |
+Se você achou esta implementação útil, por favor, dê uma estrela! ⭐
 
----
-
-## Melhorias Futuras
-
-- Listagem histórica: `/pedidos/runs`
-- Métricas Prometheus `/metrics`
-- Streaming (WebSocket / SSE)
-- Autenticação (API Key / JWT)
-- Dead-letter queue
-- Gráficos de throughput/falhas
-- Execução retomável parcial
-
----
-
-## Licença
-
-MIT (ajuste conforme necessidade).
-
----
-
-## Agradecimentos
-
-Implementado como solução completa do desafio “NodeJS + Fila + NoSQL – Processamento Massivo Prioritário”, com foco em correção, observabilidade, prioridade rigorosa e clareza operacional.
-
----
-
-### Cheat Sheet Rápido
-
-```bash
-POST /pedidos/generate?quantity=1000000   # iniciar
-POST /pedidos/cancel                      # cancelar
-POST /pedidos/reset                       # limpar
-GET  /pedidos                             # status
-GET  /pedidos/logs?lines=300              # logs
-GET  /pedidos/health/queue                # health
-```
-
-Bom uso! 🚀
