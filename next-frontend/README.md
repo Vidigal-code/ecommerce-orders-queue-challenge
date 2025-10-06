@@ -1,53 +1,64 @@
 # E-commerce Orders Queue Challenge Frontend
 
-**Test Case 1 - Real-time Monitoring Dashboard**
+**Test Case 1 - High-Performance Real-time Monitoring Dashboard**
 
-Next.js 15 + React 19 frontend providing real-time monitoring for the 1 million order processing challenge.
+Next.js 15 + React 19 frontend providing optimized real-time monitoring for the 1 million order processing challenge with efficient WebSocket communications.
+
+## 🚀 Performance Highlights
+
+| Feature | Implementation | Benefit |
+|---------|----------------|---------|
+| **Real-time Updates** | Socket.IO WebSocket | Immediate status visibility |
+| **Optimized Rendering** | React 19 + Optimistic UI | Smooth UI even during high-throughput processing |
+| **Progressive Loading** | Chunked data reception | Handles 1M+ orders without UI freezing |
+| **Reconnection Logic** | Automatic reconnect + backoff | Resilient during heavy processing |
+| **Data Throttling** | Server-side emission control | Reduced network overhead |
 
 ---
 
-## Challenge Requirements - 100% Compliance ✅
+## ✅ Challenge Requirements - 100% Compliance
 
 ### Real-time Monitoring Dashboard
 - ✅ Displays detailed execution logs with timing and order counts
 - ✅ Shows processing progress for VIP and normal orders separately
-- ✅ Real-time updates via WebSocket (no polling)
-- ✅ Visual progress bars and throughput metrics
-- ✅ Phase-based status indicators
-- ✅ Queue statistics and job monitoring
-- ✅ System health monitoring
+- ✅ Real-time updates via optimized WebSocket communications
+- ✅ Visual progress bars and throughput metrics with live updates
+- ✅ Phase-based status indicators with clear transitions
+- ✅ Queue statistics and job monitoring with health checks
+- ✅ System health monitoring with error detection
 - ✅ Control buttons for generation, cancellation, and reset
 
 ### User Interface Components
 - ✅ **Run Code Button**: Starts the 1M order generation and processing
-- ✅ **Execution Log**: Real-time display of detailed logs
-- ✅ **Progress Tracking**: Visual progress bars and ETA calculations
-- ✅ **Metrics Display**: VIP/Normal processing counts and timing
-- ✅ **Queue Controls**: Pause, resume, clean, and status operations
-- ✅ **System Reset**: Complete database and queue reset functionality
+- ✅ **Execution Log**: Real-time display of detailed logs with auto-scroll
+- ✅ **Progress Tracking**: Visual progress bars and accurate ETA calculations
+- ✅ **Metrics Display**: VIP/Normal processing counts, timing, and throughput
+- ✅ **Queue Controls**: Pause, resume, clean, and detailed status operations
+- ✅ **System Reset**: Complete database and queue reset with confirmation
 
 ### Real-time Data Flow
-- ✅ WebSocket connection to backend for live updates
-- ✅ Automatic reconnection and error handling
-- ✅ Data validation for incoming status updates
-- ✅ Fallback to API polling when WebSocket unavailable
+- ✅ Optimized Socket.IO WebSocket connection for high-frequency updates
+- ✅ Automatic reconnection with exponential backoff during disconnections
+- ✅ Robust data validation and error handling for incoming WebSocket messages
+- ✅ Graceful degradation to API polling when WebSocket is temporarily unavailable
+- ✅ Efficient client-side state management to prevent UI freezing
 
 ---
 
-## Technical Implementation
+## 🛠️ Technical Implementation
 
 ### Core Technologies
-- **Framework**: Next.js 15 with App Router
-- **UI**: React 19 + Tailwind CSS
-- **Real-time**: Socket.IO client for WebSocket communication
-- **Data Fetching**: SWR for API calls with ISR
-- **State Management**: React hooks with WebSocket integration
+- **Framework**: Next.js 15 with App Router architecture
+- **UI**: React 19 + Tailwind CSS for responsive design
+- **Real-time**: Socket.IO client with optimized connection handling
+- **Data Fetching**: SWR for API calls with Incremental Static Regeneration
+- **State Management**: React hooks with efficient WebSocket integration
 
 ### Key Components
-- **StatusDashboard**: Main metrics display with real-time updates
-- **GenerateForm**: Order generation controls
-- **LogsViewer**: Real-time log streaming
-- **QueueStatsCard**: Queue health and job statistics
+- **StatusDashboard**: Main metrics display with real-time updates and optimized re-renders
+- **GenerateForm**: Order generation controls with validation and error handling
+- **LogsViewer**: Memory-efficient real-time log streaming with virtualized rendering
+- **QueueStatsCard**: Detailed queue health and job statistics with priority differentiation
 - **WebSocket Hook**: Manages real-time data connection
 
 ### Performance Features
