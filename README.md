@@ -27,7 +27,6 @@ This implementation leverages **BullMQ 5.59+** with cutting-edge scaling pattern
 - **Flow Control**: Smart waiting and draining mechanisms
 - **Recovery Mechanisms**: Automatic stuck job recovery and queue repair
 
----elds.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11+-red.svg)](https://nestjs.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-15+-black.svg)](https://nextjs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-green.svg)](https://www.mongodb.com/)
