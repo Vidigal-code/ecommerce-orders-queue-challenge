@@ -22,13 +22,16 @@ import { OrdersProcessStateService } from './infrastructure/queue/services/order
 
 import { LogService } from './shared/logs/log.service';
 import { LogViewer } from './shared/logs/log.viewer';
+import { AsyncLogService } from './shared/logs/async-log.service';
 import { DatabaseModule } from './infrastructure/database/modules/database.module';
+import { EventsModule } from './infrastructure/websocket/events.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     RedisModule,
+    EventsModule,
   ],
   controllers: [
     OrdersGenerationController,
@@ -37,6 +40,7 @@ import { DatabaseModule } from './infrastructure/database/modules/database.modul
   ],
   providers: [
     LogService,
+    AsyncLogService,
     LogViewer,
     OrderTypeOrmRepository,
     ProcessRunTypeOrmRepository,
@@ -56,6 +60,7 @@ import { DatabaseModule } from './infrastructure/database/modules/database.modul
     OrdersProcessStateService,
     OrdersGenerationProcessor,
     OrdersWorkerProcessor,
+    // EventsGateway, // Removed - WebSocket gateways are auto-discovered
   ],
 })
 export class AppModule {}

@@ -74,7 +74,7 @@ export function JobsTable() {
                     </thead>
                     <tbody>
                     {jobs.map((j) => {
-                        const prio = (j.data as any)?.priority;
+                        const prio = j.data?.priority;
                         const isVip = prio === 'VIP';
                         const started = j.processedOn
                             ? new Date(j.processedOn).toLocaleTimeString()

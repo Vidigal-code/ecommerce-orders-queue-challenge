@@ -2,9 +2,20 @@
 import { useState } from 'react';
 import { api } from '@/lib/api';
 
+type CancelResult = {
+    aborted: boolean;
+    queuePaused: boolean;
+    removedPending?: number;
+    purged?: boolean;
+    logsReset?: boolean;
+    message: string;
+    waitedForStopMs?: number;
+    stillActive?: boolean;
+};
+
 export function CancelRunCard({ onDone }: { onDone?: () => void }) {
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<CancelResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     async function cancel() {
@@ -19,8 +30,8 @@ export function CancelRunCard({ onDone }: { onDone?: () => void }) {
             });
             setResult(res);
             onDone?.();
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Unknown error');
         } finally {
             setLoading(false);
         }

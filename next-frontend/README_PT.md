@@ -347,7 +347,6 @@ Implementado:
 Possíveis otimizações:
 - `bulkWrite` para updates de processamento
 - Métricas de throughput (pedidos/seg)
-- Migração para BullMQ
 - Escalonar múltiplos workers
 
 ---

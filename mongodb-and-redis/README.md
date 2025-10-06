@@ -13,7 +13,7 @@ This repository provides a ready-to-use Docker setup for MongoDB and Redis, desi
 ## Features
 
 - **MongoDB 6.0** running in a Docker container
-- **Redis 7.2** for BullMQ queue processing
+- **Redis 7.2** for Bull queue processing
 - Pre-configured with a `vidigalcode` user (`test1234` password)
 - Automatically creates the `ecommerce` database and the `orders` collection with useful indexes
 - Persistent storage via Docker volume
@@ -42,7 +42,7 @@ This repository provides a ready-to-use Docker setup for MongoDB and Redis, desi
    redis://localhost:6379
    ```
 
-   Use this URL for BullMQ or any queue-processing implementation.
+   Use this URL for Bull or any queue-processing implementation.
 
 ## Initialization Script
 

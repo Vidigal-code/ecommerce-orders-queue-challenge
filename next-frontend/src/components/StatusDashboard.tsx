@@ -1,6 +1,5 @@
 'use client';
-import useSWR from 'swr';
-import { api } from '@/lib/api';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { OrdersStatusDto } from '@/lib/types';
 import { numberFmt, ms, etaFmt, percentFmt } from '@/lib/format';
 import { PhaseBadge } from './PhaseBadge';
@@ -9,10 +8,9 @@ import { ProgressBar } from './ProgressBar';
 import { ThroughputPanel } from './ThroughputPanel';
 
 export function StatusDashboard({ initial }: { initial: OrdersStatusDto | null }) {
-    const { data, mutate } = useSWR('status', api.status, {
-        fallbackData: initial || undefined,
-        refreshInterval: 6000,
-    });
+    const { status, isConnected } = useWebSocket();
+
+    const data = status || initial;
 
     if (!data) {
         return (
@@ -87,24 +85,24 @@ export function StatusDashboard({ initial }: { initial: OrdersStatusDto | null }
             />
 
             <div className="text-right">
-                <button
-                    onClick={() => mutate()}
-                    className="text-xs px-3 py-1 bg-neutral-700 hover:bg-neutral-600 rounded"
-                >
-                    Refresh Now
-                </button>
+                <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-xs text-neutral-400">
+                        {isConnected ? 'Live' : 'Disconnected'}
+                    </span>
+                </div>
             </div>
         </div>
     );
 }
 
-function InfoCard({ label, value }: { label: string; value: any }) {
+function InfoCard({ label, value }: { label: string; value: string | number | null | undefined }) {
     return (
         <div className="p-3 rounded bg-neutral-800 flex flex-col gap-1 border border-neutral-700">
       <span className="text-[10px] uppercase tracking-wide text-neutral-400">
         {label}
       </span>
-            <span className="font-semibold text-sm break-all">{value}</span>
+            <span className="font-semibold text-sm break-all">{value ?? '-'}</span>
         </div>
     );
 }

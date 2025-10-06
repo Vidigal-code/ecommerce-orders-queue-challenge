@@ -16,8 +16,8 @@ export function GenerateForm({ onSuccess }: { onSuccess?: () => void }) {
             const res = await api.generate(quantity);
             setMsg(res.message);
             onSuccess?.();
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Unknown error');
         } finally {
             setLoading(false);
         }

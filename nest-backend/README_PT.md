@@ -486,7 +486,6 @@ Utilidade:
 
 ## Possíveis Evoluções Futuras
 
-- Migração para BullMQ.
 - Persistência da fase para retomar após falha.
 - Endpoint Prometheus (`/metrics`).
 - Streaming de logs (SSE/WebSocket).

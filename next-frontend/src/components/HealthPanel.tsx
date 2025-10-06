@@ -17,7 +17,6 @@ export function HealthPanel() {
         );
     }
 
-    const c = data.queue || {};
     const processor = data.processor;
 
     return (
@@ -45,7 +44,7 @@ export function HealthPanel() {
     );
 }
 
-function Stat({ label, value }: { label: string; value: any }) {
+function Stat({ label, value }: { label: string; value: string | number | boolean | null | undefined }) {
     return (
         <div className="p-2 bg-neutral-800 rounded flex flex-col">
             <span className="text-[10px] uppercase text-neutral-400">{label}</span>

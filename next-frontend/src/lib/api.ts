@@ -54,7 +54,7 @@ export interface CancelParams {
 }
 
 export const api = {
-    status: () => apiFetch<OrdersStatusDto>('/pedidos'),
+    status: () => apiFetch<OrdersStatusDto>('/orders'),
 
     health: () => apiFetch<HealthResponse>('/pedidos/health/queue'),
 
@@ -102,12 +102,12 @@ export const api = {
     reset: () =>
         apiFetch<{ message: string }>('/pedidos/reset', { method: 'POST' }),
 
-    pause: () => apiFetch('/pedidos/queue/pause', { method: 'POST' }),
+    pause: () => apiFetch<void>('/pedidos/queue/pause', { method: 'POST' }),
 
-    resume: () => apiFetch('/pedidos/queue/resume', { method: 'POST' }),
+    resume: () => apiFetch<void>('/pedidos/queue/resume', { method: 'POST' }),
 
     clean: (state: string) =>
-        apiFetch(`/pedidos/queue/clean?state=${encodeURIComponent(state)}`, {
+        apiFetch<{ message: string }>(`/pedidos/queue/clean?state=${encodeURIComponent(state)}`, {
             method: 'POST',
         }),
 

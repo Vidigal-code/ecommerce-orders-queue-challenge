@@ -1,4 +1,4 @@
-import { Processor, Process } from '@nestjs/bull';
+import { Process, Processor } from '@nestjs/bull';
 import type { Job } from 'bull';
 import { Inject, Injectable } from '@nestjs/common';
 import * as orderRepository from '../../../domain/repositories/order.repository';
@@ -9,6 +9,7 @@ import { LogsUseCase } from '../../../application/use-cases/logs.usecase';
 import { LogService } from '../../../shared/logs/log.service';
 import { Phase } from '../types/phase.types';
 import { OrdersProcessStateService } from '../services/orders-process-state.service';
+import { EventsGateway } from '../../websocket/events.gateway';
 
 const RANDOM_OBSERVATIONS = [
   'Pedido padrão',
@@ -47,6 +48,7 @@ export class OrdersGenerationProcessor {
     private readonly logsUseCase: LogsUseCase,
     private readonly logService: LogService,
     private readonly state: OrdersProcessStateService,
+    private readonly eventsGateway: EventsGateway,
   ) {
     this.logsUseCase.setPhase?.(this.state.getPhase());
   }
@@ -112,7 +114,7 @@ export class OrdersGenerationProcessor {
 
   private buildOrder(index: number): Order {
     const tier = Object.values(Tier)[Math.floor(Math.random() * 4)];
-    const priority = tier === Tier.DIAMANTE ? Priority.VIP : Priority.NORMAL;
+    const priority = tier === Tier.DIAMOND ? Priority.VIP : Priority.NORMAL;
     const randomObservation =
       RANDOM_OBSERVATIONS[
         Math.floor(Math.random() * RANDOM_OBSERVATIONS.length)
@@ -211,6 +213,16 @@ export class OrdersGenerationProcessor {
               )}MB heapUsed=${(mem.heapUsed / 1024 / 1024).toFixed(1)}MB`,
             );
           }
+
+          // Emit progress via WebSocket
+          this.eventsGateway.emitProgress({
+            phase: 'GENERATING',
+            progress: parseFloat(percent),
+            current: generated,
+            total: quantity,
+            message: `Generating orders: ${generated}/${quantity} (${percent}%)`,
+          });
+
           lastProgressLog = now;
         }
 
@@ -235,11 +247,21 @@ export class OrdersGenerationProcessor {
       );
 
       try {
+        const vipProcessingStart = Date.now();
         await this.waitForQueueDrained();
+        const vipProcessingEnd = Date.now();
+        const vipProcessingTimeMs = vipProcessingEnd - vipProcessingStart;
+
+        // Record VIP processing timing
+        this.logsUseCase.setVIPProcessing(
+          new Date(vipProcessingStart),
+          new Date(vipProcessingEnd),
+          vipProcessingTimeMs,
+        );
 
         await this.finalizePersist(true);
         this.logService.log(
-          '[OrdersGenerationProcessor] VIP processados. Iniciando enfileiramento NORMAL.',
+          `[OrdersGenerationProcessor] VIP processados em ${vipProcessingTimeMs}ms. Iniciando enfileiramento NORMAL.`,
         );
       } catch (err) {
         if (this.state.isAborting()) {
@@ -329,11 +351,22 @@ export class OrdersGenerationProcessor {
         '[OrdersGenerationProcessor] Aguardando fila drenar NORMAL...',
       );
       try {
+        const normalProcessingStart = Date.now();
         await this.waitForQueueDrained();
+        const normalProcessingEnd = Date.now();
+        const normalProcessingTimeMs = normalProcessingEnd - normalProcessingStart;
+
+        // Record NORMAL processing timing
+        this.logsUseCase.setNormalProcessing(
+          new Date(normalProcessingStart),
+          new Date(normalProcessingEnd),
+          normalProcessingTimeMs,
+        );
+
         if (!this.state.isAborting()) {
           this.setPhase('DONE');
           this.logService.log(
-            '[OrdersGenerationProcessor] Todas as fases concluídas.',
+            `[OrdersGenerationProcessor] NORMAL processados em ${normalProcessingTimeMs}ms. Todas as fases concluídas.`,
           );
         } else {
           this.setPhase('ABORTED');

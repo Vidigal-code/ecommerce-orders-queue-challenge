@@ -31,7 +31,7 @@ Referências diretas (como solicitado):
 | Gerar 1M de pedidos aleatórios (id, cliente, valor, tier, observacoes) | ✅ |
 | Derivar prioridade: DIAMANTE → VIP; demais → NORMAL | ✅ |
 | Armazenar em NoSQL (MongoDB) com campo `priority` | ✅ |
-| Processamento via fila (Bull / BullMQ like) | ✅ (Bull) |
+| Processamento via fila (Bull) | ✅ (Bull) |
 | Garantir conclusão 100% dos VIP antes de NORMAL | ✅ |
 | Atualização de status/observação por prioridade | ✅ |
 | Medir tempos de geração + processamento por prioridade | ✅ |
@@ -262,7 +262,6 @@ Possíveis melhorias futuras:
 - `bulkWrite` para updates de processamento
 - Métrica de throughput (pedidos/seg)
 - Escala horizontal (múltiplos workers)
-- Migração para BullMQ
 - Streaming de logs (WebSocket/SSE)
 
 ---

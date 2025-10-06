@@ -13,7 +13,7 @@ Este repositório fornece uma configuração pronta para uso do MongoDB e Redis 
 ## Funcionalidades
 
 - **MongoDB 6.0** rodando em um container Docker
-- **Redis 7.2** para processamento de filas com BullMQ
+- **Redis 7.2** para processamento de filas com Bull
 - Usuário pré-configurado `vidigalcode` (senha `test1234`)
 - Criação automática do banco de dados `ecommerce` e da coleção `orders` com índices úteis
 - Armazenamento persistente via volume Docker
@@ -42,7 +42,7 @@ Este repositório fornece uma configuração pronta para uso do MongoDB e Redis 
    redis://localhost:6379
    ```
 
-   Use este endereço para BullMQ ou qualquer implementação de filas.
+   Use este endereço para Bull ou qualquer implementação de filas.
 
 ## Script de Inicialização
 

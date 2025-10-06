@@ -1,53 +1,60 @@
-# E-commerce Orders Queue Challenge (NestJS + Bull + MongoDB + Redis)
+# E-commerce Orders Queue Challenge Backend
 
-> Updated version – focused on clarity, technical completeness, diagnostics and extensibility.
+**Test Case 1 - NodeJS + Queues + NoSQL (Multiple Order Processing Queue) - Mandatory**
 
----
-
-## Table of Contents
-- [Executive Summary (TL;DR)](#executive-summary-tldr)
-- [Challenge Description](#challenge-description)
-- [Requirement Compliance Status](#requirement-compliance-status)
-- [High-Level Architecture](#high-level-architecture)
-- [End-to-End Phase Flow](#end-to-end-phase-flow)
-- [Data Model](#data-model)
-- [Order Generation Strategy](#order-generation-strategy)
-- [Priority Processing (VIP → NORMAL)](#priority-processing-vip--normal)
-- [Queue, Concurrency & Backpressure Strategy](#queue-concurrency--backpressure-strategy)
-- [Metrics, Logs & Execution History](#metrics-logs--execution-history)
-- [Safe Cancellation (Cooperative Abort)](#safe-cancellation-cooperative-abort)
-- [API Reference](#api-reference)
-- [Response Shape of /pedidos](#response-shape-of-pedidos)
-- [Environment Variables](#environment-variables)
-- [Sample .env](#sample-env)
-- [Running Locally](#running-locally)
-- [Docker (Optional)](#docker-optional)
-- [Usage Examples (curl)](#usage-examples-curl)
-- [Health & Monitoring](#health--monitoring)
-- [Scalability & Performance Notes](#scalability--performance-notes)
-- [Technical Decisions](#technical-decisions)
-- [Known Limitations](#known-limitations)
-- [Troubleshooting](#troubleshooting)
-- [Potential Future Enhancements](#potential-future-enhancements)
-- [License](#license)
-- [Changelog (Summary)](#changelog-summary)
+NestJS backend implementation for generating and processing 1 million e-commerce orders with priority queuing using Bull and MongoDB.
 
 ---
 
-## Executive Summary (TL;DR)
+## Challenge Requirements - 100% Compliance ✅
 
-| Goal | Status |
-|------|--------|
-| Generate ≥ 1M randomized orders | ✅ |
-| Priority classification (DIAMOND → VIP) | ✅ |
-| Fully process VIP before NORMAL | ✅ (strict sequencing) |
-| Persist to scalable NoSQL (MongoDB) | ✅ |
-| Timing metrics (generation, enqueue, processing per priority) | ✅ |
-| Processed counters (VIP, NORMAL) | ✅ |
-| Single consolidated status endpoint (/pedidos) | ✅ |
-| Logs accessible via API (/pedidos/logs) | ✅ |
-| Reset for clean reruns (/pedidos/reset) | ✅ |
-| Safe cancellation (/pedidos/cancel) | ✅ |
+### 1. Order Generation
+- ✅ Generate 1 million orders with fields: ID, customer, amount, tier (BRONZE, SILVER, GOLD, DIAMOND), observations
+- ✅ Record generation time
+- ✅ Store in MongoDB with priority field (DIAMOND = VIP, others = NORMAL)
+
+### 2. Queued Order Processing
+- ✅ Use Bull (not BullMQ) for batch processing
+- ✅ Strict priority: Complete all VIP (DIAMOND) orders before starting normal orders
+- ✅ Update observations: "sent with priority" for VIP, "processed without priority" for normal
+- ✅ Track processing times, start/end timestamps, and counts by type
+
+### 3. Log Display
+- ✅ Detailed execution logs with timing and counts
+- ✅ Real-time WebSocket broadcasting for live updates
+
+### 4. API
+- ✅ GET `/orders` endpoint returning complete status:
+  - Order generation time
+  - Processing times separated by priority
+  - Start/end times for each priority type
+  - Total execution time
+  - Order counts by type (VIP/normal)
+
+### 5. Deployment and Monitoring
+- ✅ Scalable architecture with chunked processing
+- ✅ Real-time monitoring via WebSocket
+- ✅ Database reset functionality
+
+---
+
+## Technical Architecture
+
+### Core Technologies
+- **Framework**: NestJS with modular DDD architecture
+- **Queue**: Bull (Redis-backed) for job processing
+- **Database**: MongoDB for order storage
+- **Real-time**: Socket.IO WebSocket gateway
+- **Processing**: Optimized for 1M orders with 50K chunks
+
+### Performance Optimizations
+- **Chunk Size**: 50,000 orders per generation chunk
+- **Concurrency**: 25 concurrent workers
+- **Memory**: 1GB Redis cache
+- **Batch Operations**: Bulk database inserts/updates
+- **Priority Queuing**: Strict VIP-first processing
+
+---
 | Prevent parallel “generate” runs | ✅ |
 | Execution history persistence | ✅ |
 | Throughput + ETA (extra) | ✅ |
@@ -483,7 +490,6 @@ Use to:
 
 ## Potential Future Enhancements
 
-- Migrate to BullMQ (modern API & scaling patterns).
 - Persist phase/abort state to resume after crashes.
 - Prometheus metrics endpoint (`/metrics`).
 - WebSocket / SSE live stream of progress.

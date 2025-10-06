@@ -130,7 +130,10 @@ export interface QueueJob {
     timestamp?: number;
     processedOn?: number | null;
     finishedOn?: number | null;
-    data?: unknown;
+    data?: {
+        priority?: 'VIP' | 'NORMAL';
+        [key: string]: unknown;
+    };
 }
 
 export interface QueueJobsEnvelope {

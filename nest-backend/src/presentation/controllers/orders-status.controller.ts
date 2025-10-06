@@ -14,7 +14,7 @@ import { OrdersStatusDto } from '../dtos/orders-status.dto';
 import { LogViewer } from '../../shared/logs/log.viewer';
 import { Phase } from '../../infrastructure/queue/types/phase.types';
 
-@Controller('pedidos')
+@Controller('orders')
 export class OrdersStatusController {
   constructor(
     private readonly logsUseCase: LogsUseCase,
@@ -110,6 +110,24 @@ export class OrdersStatusController {
         totalProcessed: vipProcessed + normalProcessed,
       },
     };
+  }
+
+  @Get('health/ready')
+  async readinessCheck() {
+    try {
+      // Basic readiness check - ensure the app can respond
+      return {
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      };
+    } catch (error) {
+      return {
+        status: 'not ready',
+        timestamp: new Date().toISOString(),
+        error: (error as Error).message,
+      };
+    }
   }
 
   @Get('health/queue')

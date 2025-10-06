@@ -1,48 +1,87 @@
-# E-commerce Orders Queue Challenge
+# E-commerce Orders Queue Challenge - Test Case 1
 
-Full-stack implementation of a high-volume e-commerce order generation and prioritized processing pipeline.  
-Backend (NestJS + Bull + MongoDB + Redis) and Frontend (Next.js 15 + React 19 + Tailwind) working together to:
-- Generate 1,000,000+ random orders.
-- Prioritize VIP (DIAMOND) customers over normal ones.
-- Process in a two-phase queue (VIP first, then NORMAL).
-- Expose execution metrics, logs, health, and control operations (generate / cancel / reset).
-- Provide a monitoring dashboard with real-time insights (poll + ISR).
+**NodeJS + Queues + NoSQL (Multiple Order Processing Queue) - Mandatory**
+
+Full-stack implementation that simulates an e-commerce platform generating and processing 1 million orders, storing them in a scalable NoSQL database, and displaying detailed logs with execution time and order counts.
 
 ---
 
-## Repository Structure
+## Challenge Requirements - 100% Compliance
 
-| Layer | Path | Description |
-|-------|------|-------------|
-| Backend | [`nest-backend`](https://github.com/Vidigal-code/ecommerce-orders-queue-challenge/tree/main/nest-backend) | NestJS API, queue workers, persistence, metrics |
-| Frontend | [`next-frontend`](https://github.com/Vidigal-code/ecommerce-orders-queue-challenge/tree/main/next-frontend) | Next.js dashboard (monitoring & control) |
+### 1. Order Generation
+- ✅ Generate 1 million orders with randomly populated fields:
+  - ID, customer, amount, tier (BRONZE, SILVER, GOLD, DIAMOND), observations
+- ✅ Record order generation time
+- ✅ Store orders in MongoDB NoSQL database with priority field
+- ✅ Differentiate VIP (DIAMOND) from normal orders
 
-Direct references (as requested):
-- Backend: `@Vidigal-code/ecommerce-orders-queue-challenge/files/nest-backend`
-- Frontend: `@Vidigal-code/ecommerce-orders-queue-challenge/files/next-frontend`
+### 2. Queued Order Processing
+- ✅ Use Bull (not BullMQ) for batch processing
+- ✅ Priority processing: VIP (DIAMOND) orders completed before normal orders begin
+- ✅ Update observations: "sent with priority" for VIP, "processed without priority" for normal
+- ✅ Record processing times, start/end times, and counts by order type
+
+### 3. Log Display
+- ✅ Detailed logs showing the process execution
+- ✅ Real-time log updates via WebSocket
+
+### 4. API
+- ✅ Single GET `/orders` endpoint returning:
+  - Order generation time
+  - Processing and saving time separated by priority
+  - Processing start and end times for each priority type
+  - Total process execution time
+  - Number of orders processed for each type (VIP and normal)
+
+### 5. Deployment and Monitoring
+- ✅ Scalable application architecture
+- ✅ Logs displayed in real-time interface
+- ✅ Database reset functionality for re-running tests
 
 ---
 
-## Challenge Summary (Requirements)
+## Technical Implementation
 
-| Requirement | Implemented |
-|-------------|-------------|
-| Generate 1M random orders (id, client, value, tier, observations) | ✅ |
-| Derive priority: DIAMOND → VIP; others → NORMAL | ✅ |
-| Store in NoSQL (MongoDB) with `priority` field | ✅ |
-| Queue-based processing (Bull/BullMQ-like) | ✅ (Bull) |
-| Enforce full VIP completion before NORMAL | ✅ |
-| Update status/observations per priority | ✅ |
-| Track generation + processing times by priority | ✅ |
-| Track start/end timestamps per priority | ✅ |
-| Return single status endpoint GET `/pedidos` | ✅ |
-| Provide logs (with counts & timing) | ✅ |
-| Reset system (DB + queue + metrics) | ✅ |
-| Scalability & chunking | ✅ |
-| Monitoring dashboard (UI) | ✅ |
-| Cancellation (abort mid-run safely) | ✅ (bonus) |
-| Health endpoint | ✅ |
-| Historical run persistence | ✅ (process_runs) |
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Backend** | NestJS + Bull + MongoDB + Redis | API, queue processing, data persistence |
+| **Frontend** | Next.js 15 + React 19 + Socket.IO | Real-time monitoring dashboard |
+| **Queue** | Bull (Redis-backed) | High-performance job queuing with priority |
+| **Database** | MongoDB | NoSQL storage for 1M+ orders |
+| **Real-time** | Socket.IO WebSocket | Live status updates and progress |
+
+---
+
+## Performance Optimizations
+
+- **Chunk Processing**: 50,000 orders per chunk for optimal memory usage
+- **Concurrency**: 25 concurrent workers for maximum throughput
+- **Memory**: 1GB Redis cache, optimized for high-volume processing
+- **Batch Operations**: Bulk database operations for efficiency
+- **WebSocket**: Real-time updates without polling overhead
+
+---
+
+## Architecture Highlights
+
+### DDD Modular Architecture
+- **Domain Layer**: Business entities and repository interfaces
+- **Application Layer**: Use cases orchestrating business logic
+- **Infrastructure Layer**: External concerns (DB, Queue, WebSocket)
+- **Presentation Layer**: REST API and DTOs
+
+### Queue Processing Flow
+1. **Generation Phase**: Create 1M orders with random data
+2. **VIP Processing**: Process all DIAMOND tier orders first
+3. **Normal Processing**: Process remaining orders after VIP completion
+4. **Real-time Updates**: WebSocket broadcasts progress and metrics
+
+### Data Flow
+```
+Frontend (Next.js) ↔ WebSocket ↔ NestJS API ↔ Bull Queue ↔ Redis
+                                      ↘
+                                       MongoDB (Orders Storage)
+```
 
 ---
 
@@ -255,7 +294,6 @@ Potential future improvements:
 - Bulk write for status updates
 - Throughput measurement (orders/sec)
 - Horizontal scaling (multiple workers)
-- BullMQ migration
 - Streaming logs (WebSocket/SSE)
 
 ---

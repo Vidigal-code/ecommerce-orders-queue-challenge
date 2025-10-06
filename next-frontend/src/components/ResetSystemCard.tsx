@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 
 export function ResetSystemCard({ onDone }: { onDone?: () => void }) {
     const [loading, setLoading] = useState(false);
-    const [res, setRes] = useState<any>(null);
+    const [res, setRes] = useState<{ message: string } | null>(null);
     const [err, setErr] = useState<string | null>(null);
 
     async function reset() {
@@ -15,8 +15,8 @@ export function ResetSystemCard({ onDone }: { onDone?: () => void }) {
             const r = await api.reset();
             setRes(r);
             onDone?.();
-        } catch (e: any) {
-            setErr(e.message);
+        } catch (e: unknown) {
+            setErr(e instanceof Error ? e.message : 'Unknown error');
         } finally {
             setLoading(false);
         }

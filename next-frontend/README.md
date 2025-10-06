@@ -1,48 +1,60 @@
-# E-commerce Orders Queue Challenge
-Full Stack Solution (Backend: NestJS + Bull + MongoDB + Redis | Frontend: Next.js 15 + React 19 + Tailwind)
+# E-commerce Orders Queue Challenge Frontend
+
+**Test Case 1 - Real-time Monitoring Dashboard**
+
+Next.js 15 + React 19 frontend providing real-time monitoring for the 1 million order processing challenge.
 
 ---
 
-## Table of Contents
-- [Project Overview](#project-overview)
-- [Core Features](#core-features)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Repository Structure](#repository-structure)
-- [Backend (NestJS) Overview](#backend-nestjs-overview)
-- [Processing Lifecycle (Phases)](#processing-lifecycle-phases)
-- [Data Model](#data-model)
-- [API Endpoints](#api-endpoints)
-- [Execution Metrics & Logging](#execution-metrics--logging)
-- [Cancellation & Reset Flow](#cancellation--reset-flow)
-- [Frontend (Next.js) Dashboard](#frontend-nextjs-dashboard)
-- [Environment Variables](#environment-variables)
-- [Running Locally](#running-locally)
-- [Docker (Optional)](#docker-optional)
-- [Performance Notes](#performance-notes)
-- [Troubleshooting](#troubleshooting)
-- [Security Considerations](#security-considerations)
-- [Roadmap / Future Enhancements](#roadmap--future-enhancements)
-- [License](#license)
+## Challenge Requirements - 100% Compliance ✅
+
+### Real-time Monitoring Dashboard
+- ✅ Displays detailed execution logs with timing and order counts
+- ✅ Shows processing progress for VIP and normal orders separately
+- ✅ Real-time updates via WebSocket (no polling)
+- ✅ Visual progress bars and throughput metrics
+- ✅ Phase-based status indicators
+- ✅ Queue statistics and job monitoring
+- ✅ System health monitoring
+- ✅ Control buttons for generation, cancellation, and reset
+
+### User Interface Components
+- ✅ **Run Code Button**: Starts the 1M order generation and processing
+- ✅ **Execution Log**: Real-time display of detailed logs
+- ✅ **Progress Tracking**: Visual progress bars and ETA calculations
+- ✅ **Metrics Display**: VIP/Normal processing counts and timing
+- ✅ **Queue Controls**: Pause, resume, clean, and status operations
+- ✅ **System Reset**: Complete database and queue reset functionality
+
+### Real-time Data Flow
+- ✅ WebSocket connection to backend for live updates
+- ✅ Automatic reconnection and error handling
+- ✅ Data validation for incoming status updates
+- ✅ Fallback to API polling when WebSocket unavailable
 
 ---
 
-## Example
+## Technical Implementation
 
-<img src="/next-frontend/example/next-example.png" alt="" width="800"/> 
+### Core Technologies
+- **Framework**: Next.js 15 with App Router
+- **UI**: React 19 + Tailwind CSS
+- **Real-time**: Socket.IO client for WebSocket communication
+- **Data Fetching**: SWR for API calls with ISR
+- **State Management**: React hooks with WebSocket integration
 
----
+### Key Components
+- **StatusDashboard**: Main metrics display with real-time updates
+- **GenerateForm**: Order generation controls
+- **LogsViewer**: Real-time log streaming
+- **QueueStatsCard**: Queue health and job statistics
+- **WebSocket Hook**: Manages real-time data connection
 
-## Project Overview
-
-This project simulates a large-scale e-commerce order ingestion and prioritized processing pipeline:
-
-- Generates up to 1.5M orders (configurable).
-- Distinguishes VIP (DIAMOND tier) vs Normal orders and enforces strict priority: ALL VIP orders are processed before NORMAL orders enter the queue.
-- Uses a Redis-backed queue (Bull) for scalable parallel processing.
-- Persists orders and process execution metadata in MongoDB.
-- Provides a rich monitoring & control dashboard (Next.js) with real-time insights.
-- Supports cancellation, queue draining, system reset, and metrics persistence.
+### Performance Features
+- **ISR**: 15-second revalidation for non-real-time data
+- **WebSocket**: Instant updates for processing status
+- **Optimized Rendering**: Efficient React components
+- **Error Boundaries**: Graceful error handling
 
 ---
 
@@ -370,7 +382,6 @@ Optimization strategies in place:
 Potential future tuning:
 - Replace per-order updates with `bulkWrite`
 - Throughput measurement (orders/sec) via periodic snapshots
-- Migrate to BullMQ for newer features
 - Add horizontal scaling for processors (multiple instances)
 
 ---
