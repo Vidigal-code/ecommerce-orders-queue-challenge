@@ -1,133 +1,40 @@
+version: '3.8'
+
 services:
-  # MongoDB - NoSQL Database for Orders
-  mongodb:
-    image: mongo:6.0
-    container_name: ecommerce-mongodb
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: vidigalcode
-      MONGO_INITDB_ROOT_PASSWORD: test1234
-      MONGO_INITDB_DATABASE: ecommerce_orders
-    volumes:
-      - mongodb_data:/data/db
-      - ./mongodb-and-redis/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    networks:
-      - ecommerce-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
-
-  # Redis - Queue Backend for BullMQ
-  redis:
-    image: redis:7.2-alpine
-    container_name: ecommerce-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    networks:
-      - ecommerce-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # NestJS Backend - API + BullMQ Workers
   backend:
     build:
       context: ./nest-backend
       dockerfile: Dockerfile
-    container_name: ecommerce-backend
-    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      # Application
-      NODE_ENV: production
-      PORT: 3000
-      
-      # MongoDB Configuration
-      MONGO_URI: mongodb://vidigalcode:test1234@mongodb:27017/ecommerce_orders?authSource=admin
-      MONGO_HOST: mongodb
-      MONGO_PORT: 27017
-      MONGO_DATABASE: ecommerce_orders
-      MONGO_USERNAME: vidigalcode
-      MONGO_PASSWORD: test1234
-      
-      # Redis Configuration
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      
-      # Queue Configuration
-      MAX_ORDERS: 1000000
-      GENERATION_CHUNK_SIZE: 25000
-      NORMAL_ENQUEUE_BATCH_SIZE: 25000
-      ORDERS_QUEUE_CONCURRENCY: 10
-      BULK_UPDATE_MODE: "true"
-      
-      # Metrics
-      ENABLE_METRICS: "false"
-      
-      # CORS
-      CORS_ORIGIN: http://localhost:3001
+      - MONGO_URI=mongodb://mongo:27017/ecommerce
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - ecommerce-network
-    volumes:
-      - ./nest-backend/shared/logs:/app/shared/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      - mongo
+      - redis
 
-  # Next.js Frontend - Monitoring Dashboard
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
   frontend:
     build:
-      context: ./next-frontend
+      context: ./react-frontend
       dockerfile: Dockerfile
-    container_name: ecommerce-frontend
-    restart: unless-stopped
     ports:
-      - "3001:3001"
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      NEXT_PUBLIC_BACKEND_URL: http://localhost:3000
-      NEXT_PUBLIC_WS_URL: http://localhost:3000
+      - "3001:3000"
     depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - ecommerce-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-networks:
-  ecommerce-network:
-    driver: bridge
-    name: ecommerce-orders-network
+      - backend
 
 volumes:
-  mongodb_data:
-    name: ecommerce-mongodb-data
-  redis_data:
-    name: ecommerce-redis-data
+  mongo_data:
