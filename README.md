@@ -4,7 +4,6 @@
 
 High-performance full-stack implementation that simulates an e-commerce platform generating and processing 1 million orders with optimized queuing, storing them in a scalable NoSQL database, and displaying real-time detailed logs via WebSocket.
 
-![System Architecture](https://raw.githubusercontent.com/Vidigal-code/ecommerce-orders-queue-challenge/nest-bull/architecture-diagram.png)
 
 ## 🚀 Performance Metrics
 
