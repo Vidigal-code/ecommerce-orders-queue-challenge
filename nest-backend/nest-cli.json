@@ -1,8 +1,24 @@
 {
-  "$schema": "https://json.schemastore.org/nest-cli",
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "collection": {
+    "assets": [
+      {
+        "type": "json",
+        "path": "src/**/*.json"
+      }
+    ],
+    "exclude": [
+      "node_modules",
+      "dist"
+    ]
+  },
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "assets": [
+      "src/**/*.json"
+    ]
+  },
+  "generate": {
+    "spec": true,
+    "type": "json"
   }
 }
