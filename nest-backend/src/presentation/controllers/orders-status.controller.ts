@@ -14,7 +14,7 @@ import { OrdersStatusDto } from '../dtos/orders-status.dto';
 import { LogViewer } from '../../shared/logs/log.viewer';
 import { Phase } from '../../infrastructure/queue/types/phase.types';
 
-@Controller('orders')
+@Controller('pedidos')
 export class OrdersStatusController {
   constructor(
     private readonly logsUseCase: LogsUseCase,

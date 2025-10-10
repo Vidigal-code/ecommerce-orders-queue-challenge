@@ -54,7 +54,7 @@ export interface CancelParams {
 }
 
 export const api = {
-    status: () => apiFetch<OrdersStatusDto>('/orders'),
+    status: () => apiFetch<OrdersStatusDto>('/pedidos'),
 
     health: () => apiFetch<HealthResponse>('/pedidos/health/queue'),
 

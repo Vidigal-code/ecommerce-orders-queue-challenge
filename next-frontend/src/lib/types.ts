@@ -52,6 +52,14 @@ export interface ProcessLog {
     phase?: Phase | string;
 }
 
+export interface LogMessage {
+    timestamp: number;
+    level: 'log' | 'warn' | 'error';
+    message: string;
+    category?: string;
+    data?: unknown;
+}
+
 export interface LogFileMessages {
     logMessages: string[];
     warnMessages: string[];
