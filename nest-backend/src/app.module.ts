@@ -93,7 +93,11 @@ import { TimingService } from './shared/timing/timing.service';
         const connection = {
           host: config.get<string>('REDIS_HOST'),
           port: config.get<number>('REDIS_PORT'),
-        };
+          maxRetriesPerRequest: null as any,
+          enableReadyCheck: true,
+          commandTimeout: 20000 as any,
+          connectTimeout: 60000 as any,
+        } as any;
         const worker = new Worker(
           'orders-queue',
           async (job) => workerHost.process(job as any),

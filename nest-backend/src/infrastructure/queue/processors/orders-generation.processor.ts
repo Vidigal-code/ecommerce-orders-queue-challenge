@@ -175,6 +175,15 @@ export class OrdersGenerationProcessor extends WorkerHost {
       ? this.orderRepo.iterateByPriority(priority, batchEnqueueSize)
       : null;
 
+    // Backpressure thresholds to avoid overfilling Redis
+    const MAX_QUEUED = parseInt(
+      (priority === Priority.VIP
+        ? process.env.MAX_QUEUED_VIP
+        : process.env.MAX_QUEUED_NORMAL) || '250000',
+      10,
+    );
+    const LOW_WATERMARK = Math.floor(MAX_QUEUED * 0.6);
+
     if (!iterator) {
       const all = await this.orderRepo.findByPriority(priority);
       for (let i = 0; i < all.length; i += batchEnqueueSize) {
@@ -182,6 +191,24 @@ export class OrdersGenerationProcessor extends WorkerHost {
         const slice = all.slice(i, i + batchEnqueueSize);
         await this.queue.addBulkOrdersToQueue(slice);
         totalEnqueued += slice.length;
+
+        // Throttle if too many jobs are pending in Redis
+        try {
+          const counts = await this.queue.getCounts();
+          const pending = (counts.waiting || 0) + (counts.delayed || 0);
+          if (pending > MAX_QUEUED) {
+            this.log.warn(
+              `[OrdersGenerationProcessor] Backpressure: pending=${pending} > MAX_QUEUED=${MAX_QUEUED}. Aguardando baixar para ${LOW_WATERMARK}...`,
+            );
+            while (true) {
+              this.ensureNotAborted(`throttle ${label}`);
+              const c = await this.queue.getCounts();
+              const p = (c.waiting || 0) + (c.delayed || 0);
+              if (p <= LOW_WATERMARK) break;
+              await new Promise((r) => setTimeout(r, 2000));
+            }
+          }
+        } catch {}
       }
     } else {
       for await (const batch of iterator) {
@@ -203,6 +230,24 @@ export class OrdersGenerationProcessor extends WorkerHost {
             });
           } catch (e) {}
         }
+
+        // Throttle if too many jobs are pending in Redis
+        try {
+          const counts = await this.queue.getCounts();
+          const pending = (counts.waiting || 0) + (counts.delayed || 0);
+          if (pending > MAX_QUEUED) {
+            this.log.warn(
+              `[OrdersGenerationProcessor] Backpressure: pending=${pending} > MAX_QUEUED=${MAX_QUEUED}. Aguardando baixar para ${LOW_WATERMARK}...`,
+            );
+            while (true) {
+              this.ensureNotAborted(`throttle ${label}`);
+              const c = await this.queue.getCounts();
+              const p = (c.waiting || 0) + (c.delayed || 0);
+              if (p <= LOW_WATERMARK) break;
+              await new Promise((r) => setTimeout(r, 2000));
+            }
+          }
+        } catch {}
       }
     }
 

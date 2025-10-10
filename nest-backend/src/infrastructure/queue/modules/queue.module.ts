@@ -20,7 +20,7 @@ import { ConfigService } from '@nestjs/config';
             // Connection sharing between queues
             lazyConnect: true,
             // Better error handling
-            commandTimeout: 5000,
+            commandTimeout: 20000,
             connectTimeout: 60000,
             family: 4,
           },
