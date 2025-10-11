@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { WebSocketProvider } from "@/hooks/useWebSocket";
+import dynamic from "next/dynamic";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -63,6 +64,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     &copy; {new Date().getFullYear()} Orders Queue Challenge
                 </footer>
             </div>
+            
+            {/* Global WebSocket error recovery notification will be client-side only */}
         </WebSocketProvider>
         </body>
         </html>

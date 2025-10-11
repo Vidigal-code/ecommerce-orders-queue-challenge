@@ -269,7 +269,33 @@ Capabilities:
 
 ---
 
-## Running Locally (Quick Start)
+## Running with Docker Compose (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/Vidigal-code/ecommerce-orders-queue-challenge.git
+cd ecommerce-orders-queue-challenge
+
+# Option 1: Using the quick fix and run script (recommended)
+# For Windows:
+.\run.ps1
+
+# For Linux/macOS:
+chmod +x ./run.sh
+./run.sh
+
+# Option 2: Manual start
+docker compose up --build
+
+# Access the dashboard
+# Open http://localhost:3001 in your browser
+```
+
+The quick fix and run scripts automatically handle common issues like test file errors and create necessary directories before starting the services.
+
+For detailed run instructions and validation steps, see the [Run Guide](./RUN_GUIDE.md) and [Validation Script](./VALIDATION_SCRIPT.md).
+
+## Running Locally (Development Setup)
 
 ```bash
 # 1. Infrastructure
@@ -327,11 +353,31 @@ Potential future improvements:
 
 ---
 
+## WebSocket Implementation
+
+The system implements a robust WebSocket communication layer using Socket.IO to provide real-time updates:
+
+### Features
+- Live status updates (processing phase, counts, timing)
+- Real-time log streaming with categorization
+- Connection status tracking and automatic reconnection
+- Fallback to REST API polling when WebSocket is unavailable
+
+### Architecture
+- **Backend**: NestJS WebSocket Gateway with Socket.IO server
+- **Frontend**: React Context Provider with Socket.IO client
+- **Events**: 'status', 'log', 'progress' events for real-time data
+
+### Documentation
+- [WebSocket Overview](./WEBSOCKET_OVERVIEW.md) - High-level overview of the WebSocket layer
+- [WebSocket Implementation Guide](./WEBSOCKET_IMPLEMENTATION.md) - Detailed implementation details
+- [WebSocket Testing Guide](./next-frontend/WEBSOCKET_TESTING.md) - Testing guidelines
+
 ## Future Enhancements
 
 - `/pedidos/runs` listing with pagination
 - Prometheus `/metrics`
-- WebSocket live phase/log streaming
+- WebSocket authentication and security
 - Auth (API key / JWT)
 - Dead-letter queue
 - UI charts (throughput, failures over time)

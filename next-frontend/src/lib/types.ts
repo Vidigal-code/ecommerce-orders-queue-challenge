@@ -75,6 +75,21 @@ export interface QueueStatus {
     paused: boolean;
 }
 
+// Enhanced QueueStats with more detailed real-time metrics
+export interface QueueStats {
+    waiting: number;
+    waitingVip: number;
+    waitingRegular: number;
+    active: number;
+    completed: number;
+    failed: number;
+    delayed: number;
+    paused: boolean;
+    workers: number;
+    processedTotal: number;
+    elapsedTimeSeconds: number;
+}
+
 export interface LogsResponse {
     processLog: ProcessLog;
     queueStatus: QueueStatus;

@@ -1,21 +1,73 @@
 'use client';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { OrdersStatusDto } from '@/lib/types';
+import { OrdersStatusDto, QueueStats } from '@/lib/types';
 import { numberFmt, ms, etaFmt, percentFmt } from '@/lib/format';
 import { PhaseBadge } from './PhaseBadge';
 import { TimelineBar } from './TimelineBar';
 import { ProgressBar } from './ProgressBar';
 import { ThroughputPanel } from './ThroughputPanel';
+import { ProcessVisualizer } from './ProcessVisualizer';
+import { QueueStatsDisplay } from './QueueStatsDisplay';
 
 export function StatusDashboard({ initial }: { initial: OrdersStatusDto | null }) {
-    const { status, isConnected } = useWebSocket();
+    const { status, isConnected, reconnect, lastActivity } = useWebSocket();
+    const [updateTimestamp, setUpdateTimestamp] = useState<number>(Date.now());
+    const [dataAge, setDataAge] = useState<number>(0);
+    const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+
+    // Calculate data freshness
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setUpdateTimestamp(Date.now());
+            if (lastActivity) {
+                setDataAge(Date.now() - lastActivity);
+                setLastUpdateTime(new Date(lastActivity));
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [lastActivity]);
 
     const data = status || initial;
+    
+    // Calculate queue stats from available data
+    const queueStats = useMemo<QueueStats | null>(() => {
+        if (!data) return null;
+        
+        return {
+            waiting: data.progress.target - data.progress.processedTotal,
+            waitingVip: Math.max(0, data.counts.vip - (data.processing.vip.count || 0)),
+            waitingRegular: Math.max(0, data.counts.normal - (data.processing.normal.count || 0)),
+            active: Math.min(10, data.progress.target - data.progress.processedTotal > 0 ? 10 : 0), // Approximate with workers
+            completed: data.progress.processedTotal,
+            failed: 0, // Not available directly, using 0
+            delayed: 0, // Not available directly, using 0
+            paused: data.phase === 'IDLE', // Infer from phase
+            workers: 10, // Hardcoded for demonstration, should come from server
+            processedTotal: data.progress.processedTotal,
+            elapsedTimeSeconds: Math.floor(data.totalTimeMs / 1000)
+        };
+    }, [data]);
 
     if (!data) {
         return (
-            <div className="p-4 bg-neutral-900 border border-neutral-700 rounded">
-                Status not available.
+            <div className="p-4 bg-neutral-900 border border-neutral-700 rounded-lg space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Execution Status</h2>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span className="text-xs text-neutral-400">Disconnected</span>
+                    </div>
+                </div>
+                <div className="text-center py-8">
+                    <p className="text-neutral-400 mb-4">Status data not available. Please check your connection.</p>
+                    <button 
+                        onClick={() => reconnect()}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm transition"
+                    >
+                        Retry Connection
+                    </button>
+                </div>
             </div>
         );
     }
@@ -83,13 +135,54 @@ export function StatusDashboard({ initial }: { initial: OrdersStatusDto | null }
                     { label: 'NORMAL Proc', ms: normal, color: '#2563eb' },
                 ]}
             />
+            
+            {/* Enhanced real-time visualization */}
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                {/* Process Visualization */}
+                <ProcessVisualizer phase={data.phase} />
+                
+                {/* Queue Stats */}
+                {queueStats && (
+                    <QueueStatsDisplay 
+                        stats={queueStats}
+                        isConnected={isConnected}
+                        lastUpdated={lastUpdateTime}
+                    />
+                )}
+            </div>
 
-            <div className="text-right">
-                <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xs text-neutral-400">
-                        {isConnected ? 'Live' : 'Disconnected'}
-                    </span>
+            {/* Real-time updates section */}
+            <div className="flex flex-wrap justify-between items-center gap-4 pt-2 border-t border-neutral-700">
+                <div>
+                    {data.phase !== 'IDLE' && data.phase !== 'DONE' && data.phase !== 'ERROR' && (
+                        <div className="flex items-center">
+                            <div className="animate-pulse mr-2 w-3 h-3 rounded-full bg-blue-500"></div>
+                            <span className="text-xs text-blue-400">Processing...</span>
+                        </div>
+                    )}
+                </div>
+                
+                <div className="flex items-center gap-4">
+                    {dataAge > 0 && (
+                        <span className="text-xs text-neutral-400">
+                            Last update: {dataAge < 60000 ? `${Math.floor(dataAge / 1000)}s ago` : `${Math.floor(dataAge / 60000)}m ago`}
+                        </span>
+                    )}
+                    
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-xs text-neutral-400">
+                            {isConnected ? 'Live' : 'Disconnected'}
+                        </span>
+                        {!isConnected && (
+                            <button
+                                onClick={() => reconnect()}
+                                className="ml-2 text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded transition"
+                            >
+                                Reconnect
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

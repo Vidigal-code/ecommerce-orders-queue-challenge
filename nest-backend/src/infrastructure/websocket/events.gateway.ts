@@ -109,7 +109,35 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('get-status')
   async handleGetStatus(@ConnectedSocket() client: Socket) {
-    // Send current status to client - for now send empty object to avoid crashes
-    client.emit('status', {});
+    try {
+      // Get the current status from OrdersProcessStateService or similar
+      const currentStatus = {}; // Should be replaced with actual status from a service
+
+      // If we have a status, send it
+      if (currentStatus && Object.keys(currentStatus).length > 0) {
+        client.emit('status', currentStatus);
+      } else {
+        // Otherwise, send a default status to avoid crashes
+        client.emit('status', {
+          phase: 'IDLE',
+          counts: { vip: 0, normal: 0 },
+          processing: {
+            vip: { start: null, end: null, timeMs: 0, count: 0 },
+            normal: { start: null, end: null, timeMs: 0, count: 0 }
+          },
+          generationTimeMs: 0,
+          enqueueVipTimeMs: 0,
+          enqueueNormalTimeMs: 0,
+          totalTimeMs: 0,
+          throughput: { vip: 0, normal: 0, overall: 0 },
+          eta: { estimatedMs: null, progressPercent: 0 },
+          progress: { target: 0, generated: 0, processedTotal: 0 }
+        });
+      }
+    } catch (error) {
+      console.error('Error sending status to client:', error);
+      // Send minimal status object to avoid client errors
+      client.emit('status', { phase: 'IDLE', error: 'Error retrieving status' });
+    }
   }
 }

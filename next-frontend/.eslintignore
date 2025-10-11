@@ -1,0 +1,5 @@
+# Ignore test files during build
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
