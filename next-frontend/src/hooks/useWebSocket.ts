@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { WS_BASE_URL } from '@/lib/constants';
 
 export interface LogMessage {
   timestamp: number;
@@ -44,7 +45,7 @@ interface WebSocketState {
   metrics: MetricsUpdate | null;
 }
 
-export const useWebSocket = (backendUrl: string = 'http://localhost:3000') => {
+export const useWebSocket = (backendUrl: string = WS_BASE_URL) => {
   const socketRef = useRef<Socket | null>(null);
   const [state, setState] = useState<WebSocketState>({
     isConnected: false,
@@ -63,6 +64,10 @@ export const useWebSocket = (backendUrl: string = 'http://localhost:3000') => {
       upgrade: true,
       rememberUpgrade: true,
       timeout: 20000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     const socket = socketRef.current;

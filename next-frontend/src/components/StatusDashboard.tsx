@@ -35,11 +35,10 @@ export function StatusDashboard({
     }
 
     // Use real-time data if available, otherwise fall back to polled data
-    const currentData = realTimeStatus ? {
-        ...data,
-        phase: realTimeStatus.phase,
-        // Merge other real-time data as needed
-    } : data;
+    const phase: Phase = (realTimeStatus?.phase as Phase) || (data.phase as Phase);
+    const currentData = realTimeStatus
+        ? { ...data, phase: phase }
+        : data;
 
     // Extract values from the appropriate data source
     const generation = currentData.generationTimeMs;
@@ -47,10 +46,21 @@ export function StatusDashboard({
     const normal = currentData.processing.normal.timeMs;
     const total = currentData.totalTimeMs;
 
-    // Handle progress data - realTimeProgress has different structure than OrdersStatusDto
-    const progressPercent = realTimeProgress?.progress ?? data.eta?.progressPercent ?? 0;
-    const processedTotal = realTimeProgress?.current ?? data.progress?.processedTotal ?? 0;
-    const target = realTimeProgress?.total ?? data.progress?.target ?? 0;
+    // Live processed counters from WS (preferred) with robust fallbacks
+    const processedVipLive = realTimeProgress?.vipProcessed ?? currentData.counts.vip ?? 0;
+    const processedNormalLive = realTimeProgress?.normalProcessed ?? currentData.counts.normal ?? 0;
+    const processedTotal = Math.max(0, processedVipLive + processedNormalLive);
+
+    // Target from WS generation updates or server state
+    const target = realTimeProgress?.total ?? currentData.progress?.target ?? 0;
+
+    // Overall progress: prefer processed/target; fall back to server ETA/progress or WS progress when target unknown
+    const computedOverall = target > 0 ? (processedTotal / target) * 100 : undefined;
+    const progressPercent = Math.max(0,
+        Math.min(100,
+            computedOverall ?? realTimeProgress?.progress ?? currentData.eta?.progressPercent ?? 0,
+        ),
+    );
     const remaining = target > 0 ? Math.max(0, target - processedTotal) : 0;
 
     return (
@@ -61,8 +71,8 @@ export function StatusDashboard({
             </div>
 
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-                <InfoCard label="VIP Processed" value={numberFmt(currentData.counts.vip)} />
-                <InfoCard label="NORMAL Processed" value={numberFmt(currentData.counts.normal)} />
+                <InfoCard label="VIP Processed" value={numberFmt(processedVipLive)} />
+                <InfoCard label="NORMAL Processed" value={numberFmt(processedNormalLive)} />
                 <InfoCard label="Total Processed" value={numberFmt(processedTotal)} />
                 <InfoCard label="Target" value={numberFmt(target)} />
                 <InfoCard label="Remaining" value={numberFmt(remaining)} />
